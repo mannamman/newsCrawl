@@ -31,7 +31,7 @@ Content-Length: 51
 """
 
 class Translater:
-    def __init__(self, source_lang :str, target_lang :str, context_length :int, contexts :list, api :bool=False):
+    def __init__(self, source_lang :str, target_lang :str, api :bool=False):
         """
         Translater 클래스는 크롤링한 데이터를 받아 번역을 해주는 클래스
         source_lang : 크롤링한 원본 언어
@@ -43,10 +43,9 @@ class Translater:
         self.http_method = "POST"
         self.source_lang = source_lang
         self.target_lang = target_lang
+        self.api = api
         if(api):
             self.cred = self.__load_cred()
-        self.worker_num = context_length
-        self.contexts = contexts
     
     def __load_cred(self):
         cred_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "cred/papagopasswd")
@@ -65,46 +64,33 @@ class Translater:
         return header
 
 
-    def translate(self) -> list:
-        """
-        초기에 입력받은 데이터를 바탕으로 번역 진행
-        번역은 api를 사용하므로 쓰레드를 이용하였음
-        """
-        threads = list()
-        results = [0] * self.worker_num
-        for i in range(self.worker_num):
-            t = Thread(target=self.__translate, args=(i, results))
-            threads.append(t)
-        for thread in threads:
-            thread.start()
-        return results
-
-
-    def __translate(self, idx :int, results :list):
+    def translate(self, context :str) -> dict:
+        words = None
+        if(self.api):
         # api 사용
-        # header = self.__set_req_header()
-        # data = {
-        #     "source" : self.source_lang,
-        #     "target" : self.target_lang,
-        #     "text" : self.contexts[idx]
-        # }
-        # res = requests.post(url=self.api_base_url, headers=header, data=data)
-        # ## log 추가 필요, db 추가 필요
-        # if(res.status_code == 200):
-        #     result = res.json()
-        #     result = result["message"]["result"]["translatedText"]
-        #     # log(time, res.status_code)
-        #     words = self.__context_strip(result)
-        #     results[idx] = words
-        # else:
-        #     # log(time, res.text, res.status_code)
-        #     pass
+            header = self.__set_req_header()
+            data = {
+                "source" : self.source_lang,
+                "target" : self.target_lang,
+                "text" : context
+            }
+            res = requests.post(url=self.api_base_url, headers=header, data=data)
+            ## log 추가 필요, db 추가 필요
+            if(res.status_code == 200):
+                result = res.json()
+                result = result["message"]["result"]["translatedText"]
+                # log(time, res.status_code)
+                words = self.__context_strip(result)
+            else:
+                # log(time, res.text, res.status_code)
+                pass
+        else:
+            # api 미사용
+            words = self.__context_strip(context)
+        return words
+        
 
-        # api 미사용
-        words = self.__context_strip(self.contexts[idx])
-        results[idx] = words
-
-    def __context_strip(self, context :str) -> dict:
+    def __context_strip(self, context :str) -> list:
         context = context.replace("”", " ")
         context = context.replace("“", " ")
         context = context.replace(";", " ")

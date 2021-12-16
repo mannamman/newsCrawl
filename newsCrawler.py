@@ -20,9 +20,11 @@ div id = ZINbbc xpd O9g5cc uUPGi
 
 """
 # g-card class="ftSUBd"
-timeout = 5
 
-class Crawler:
+class UrlMaker:
+    """
+    언어에 맞는 뉴스의 url을 반환하는 클래스
+    """
     def __init__(self, country :str):
         """
         입력받은 키워드를 바탕으로 구글에서 뉴스내용을 크롤링하는 클래스
@@ -30,8 +32,7 @@ class Crawler:
         """
         self.country = country
         self.base_url = "https://www.google.com"
-        # self.CLEANR = re.compile('[^a-zA-Z]')
-        self.CLEANR = re.compile('<.*?>') 
+        self.crawl_timeout = 5
     
     def __make_search_new_url(self, keyword :str):
         return f"{self.base_url}/search?q={keyword}&hl={self.country}&tbm=nws"
@@ -52,9 +53,12 @@ class Crawler:
                 f.write("\n".join(urls))
         return urls
 
-    def __get_news_urls(self, url :str) -> list:
-        print("get news url...")
-        html_text = requests.get(url, timeout=timeout).text
+    def get_news_urls(self, keyword :str) -> list:
+        """
+        keyword를 입력받아서 뉴스 url을 반환
+        """
+        url = self.__make_search_new_url(keyword)
+        html_text = requests.get(url, timeout=self.crawl_timeout).text
         soup = BeautifulSoup(html_text, 'html.parser')
         news_cards_list = soup.find_all(class_="ZINbbc xpd O9g5cc uUPGi")
         news_urls = []
@@ -74,9 +78,18 @@ class Crawler:
             news_urls.append(url)
         return news_urls
 
+
+class Crawler:
+    """
+    크롤링만 하는 클래스
+    """
+    def __init__(self):
+         self.CLEANR = re.compile('<.*?>')
+         self.crawl_timeout = 5
+
+
     def __news_crawl(self, url :str) -> str:
-        print(f"{url} crawl start")
-        html_text = requests.get(url, timeout=timeout).text
+        html_text = requests.get(url, timeout=self.crawl_timeout).text
         soup = BeautifulSoup(html_text, 'html.parser')
         p_classes = soup.find_all("p")
         context = ""
@@ -91,37 +104,13 @@ class Crawler:
         return context
 
 
-    # def __word_preprocess(self, context :str) ->str:
-    #     import nltk
-    #     try:
-    #         from nltk.corpus import stopwords
-    #     except ModuleNotFoundError:
-    #         nltk.download()
-    #     print("start word process")
-    #     # 불용어 제거
-    #     stops = set(stopwords.words('english'))
-    #     no_stops = [word for word in context if not word in stops]
-    #     stemmer = nltk.stem.SnowballStemmer('english')
-    #     stemmer_words = [stemmer.stem(word) for word in no_stops]
-    #     return(" ".join(stemmer_words))
-
-
-    def crawl(self, keyword :str):
-        url = self.__make_search_new_url(keyword)
-        news_urls = self.__get_news_urls(url)
-        # news_urls = self.__check_cache(news_urls)
-        contexts = []
-        for news_url in news_urls:
-            try:
-                context = self.__news_crawl(news_url)
-            except requests.exceptions.Timeout:
-                print(f"{news_url} time out!!")
-                continue
-            cleantext = re.sub(self.CLEANR, ' ', context)
-            cleantext = cleantext.strip().lower().split()
-            # processed_test = self.__word_preprocess(cleantext)
-            # contexts.append(processed_test)
-            contexts.append(" ".join(cleantext))
-        return contexts
-
+    def crawl(self, url):
+        try:
+            context = self.__news_crawl(url)
+        except requests.exceptions.Timeout:
+            print(f"{url} time out!!")
+            return ""
+        cleantext = re.sub(self.CLEANR, ' ', context)
+        cleantext = cleantext.strip().lower()
+        return cleantext
     
