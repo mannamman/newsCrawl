@@ -108,7 +108,7 @@ class Crawler:
         try:
             context = self.__news_crawl(url)
         except requests.exceptions.Timeout:
-            print(f"{url} time out!!")
+            # log?
             return ""
         cleantext = re.sub(self.CLEANR, ' ', context)
         cleantext = cleantext.strip().lower()

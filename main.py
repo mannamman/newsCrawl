@@ -4,7 +4,7 @@ from mongo_db import DBworker
 from threading import Thread
 
 
-def run(url, crawler :Crawler, translater :Translater, idx :int, context_results :list):
+def run(url :str, crawler :Crawler, translater :Translater, idx :int, context_results :list):
     print(f"thread {idx} start")
     context = crawler.crawl(url)
     if(context == ""):
@@ -12,7 +12,7 @@ def run(url, crawler :Crawler, translater :Translater, idx :int, context_results
         context_results[idx] = ""
         return
     result = translater.translate(context)
-    context_results[idx] = context
+    context_results[idx] = result
     print(f"thread {idx} done")
 
 
@@ -39,20 +39,21 @@ def index(request):
     translater = Translater(source_lang=source_lang, target_lang=target_lang, api=api)
     db_worker = DBworker(database=subject, collection=target_lang)
 
+    # 쓰레드 실행
     threads = list()
-    context_results = [0] * len(urls)
+    context_results = [0] * len(urls) # 결과 값을 받기위한 배열
+
     for idx, url in enumerate(urls):
         thread = Thread(target=run, args=(url, crawler, translater, idx, context_results))
         threads.append(thread)
     for thread in threads:
         thread.start()
+
     # 남은 쓰레드 대기
     while True:
         if(0 not in context_results):
             break
-
-    # 
-    # db_worker.save_result(results)
+    db_worker.save_result(context_results)
     return("ok", 200)
 
 if(__name__ == "__main__"):

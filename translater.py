@@ -64,7 +64,7 @@ class Translater:
         return header
 
 
-    def translate(self, context :str) -> dict:
+    def translate(self, context :str) -> list:
         words = None
         if(self.api):
         # api 사용
