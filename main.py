@@ -18,9 +18,9 @@ def run(url :str, crawler :Crawler, translater :Translater, idx :int, context_re
 
 subject = "snp500"
 source_lang = "en"
-target_lang = "en"
+target_lang = "ko"
 # 아직 번역 api를 사용하지 않으므로
-api = False
+api = True
 
 
 

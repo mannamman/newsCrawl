@@ -1,33 +1,14 @@
 # -*- coding: utf-8 -*-
 import requests
 import os
-from threading import Thread
+import six
+from google.cloud import translate_v2 as translate
+from google.oauth2 import service_account
 
 """
-papgo api 레퍼런스
-
-ko	한국어
-en	영어
-ja	일본어
-zh-CN	중국어 간체
-zh-TW	중국어 번체
-vi	베트남어
-id	인도네시아어
-th	태국어
-de	독일어
-ru	러시아어
-es	스페인어
-it	이탈리아어
-fr	프랑스어
-
-POST /v1/papago/n2mt HTTP/1.1
-HOST: openapi.naver.com
-User-Agent: curl/7.49.1
-Accept: */*
-Content-Type: application/x-www-form-urlencoded; charset=UTF-8
-X-Naver-Client-Id: {애플리케이션 등록 시 발급받은 클라이언트 아이디 값}
-X-Naver-Client-Secret: {애플리케이션 등록 시 발급받은 클라이언트 시크릿 값}
-Content-Length: 51
+구글 번역 api
+공식 문서 : https://cloud.google.com/translate/docs/overview
+공식 문서(개발문서) : https://googleapis.dev/python/translation/3.1.0/index.html
 """
 
 class Translater:
@@ -45,45 +26,24 @@ class Translater:
         self.target_lang = target_lang
         self.api = api
         if(api):
-            self.cred = self.__load_cred()
+            self.translate_client = self.__init_client()
     
-    def __load_cred(self):
-        cred_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "cred/papagopasswd")
-        with open(cred_path, "r") as f:
-            cred = f.read()
-            cred = cred.split(":")
-        cred = [i.strip() for i in cred]
-        return cred
-    
-    def __set_req_header(self):
-        header = {
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "X-Naver-Client-Id": self.cred[0],
-            "X-Naver-Client-Secret": self.cred[1]
-        }
-        return header
+    def __init_client(self):
+        cred_path = f"{os.getcwd()}/cred/local_translate.json"
+        credentials = service_account.Credentials.from_service_account_file(cred_path)
+        translate_client = translate.Client(credentials=credentials)
+        return translate_client
 
 
     def translate(self, context :str) -> list:
         words = None
         if(self.api):
-        # api 사용
-            header = self.__set_req_header()
-            data = {
-                "source" : self.source_lang,
-                "target" : self.target_lang,
-                "text" : context
-            }
-            res = requests.post(url=self.api_base_url, headers=header, data=data)
-            ## log 추가 필요, db 추가 필요
-            if(res.status_code == 200):
-                result = res.json()
-                result = result["message"]["result"]["translatedText"]
-                # log(time, res.status_code)
-                words = self.__context_strip(result)
-            else:
-                # log(time, res.text, res.status_code)
-                pass
+            # api 사용
+            if isinstance(context, six.binary_type):
+                context = context.decode("utf-8")
+            trans_result = self.translate_client.translate(context, target_language=self.target_lang)["translatedText"]
+            words = self.__context_strip(trans_result)
+            
         else:
             # api 미사용
             words = self.__context_strip(context)
