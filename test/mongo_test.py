@@ -15,13 +15,13 @@ DB client	mongo
 """
 
 database = "snp500"
-collections = "en"
+collections = "ko"
 
 class DBworker:
     def __init__(self):
         global database
         global collections
-        load_dotenv(verbose=True)
+        load_dotenv(dotenv_path="../cred/.mongopasswd" ,verbose=True)
         ip = os.getenv("ip")
         port = os.getenv("port")
         user = os.getenv("user")
@@ -66,7 +66,7 @@ class DBworker:
     def test_find_all(self):
         result = self.collection.find()
         for r in result:
-            print(r["createdAt"], r["words"])
+            print(r["createdAt"])
 
 
     def test_update(self):
@@ -101,6 +101,6 @@ class DBworker:
 
 if(__name__ == "__main__"):
     db = DBworker()
-    # db.test_find_all()
+    db.test_find_all()
     # db.test_find_one_createdAt("20211012_1405")
     # db.test_find_one()
