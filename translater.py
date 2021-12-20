@@ -2,7 +2,6 @@
 import os
 import six
 from google.cloud import translate_v2 as translate
-from google.oauth2 import service_account
 
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize 
@@ -32,9 +31,10 @@ class Translater:
 
     
     def __init_client(self):
-        cred_path = f"{os.getcwd()}/cred/local_translate.json"
-        credentials = service_account.Credentials.from_service_account_file(cred_path)
-        translate_client = translate.Client(credentials=credentials)
+        # cred_path = f"{os.getcwd()}/cred/local_translate.json"
+        # credentials = service_account.Credentials.from_service_account_file(cred_path)
+        # translate_client = translate.Client(credentials=credentials)
+        translate_client = translate.Client()
         return translate_client
 
 
