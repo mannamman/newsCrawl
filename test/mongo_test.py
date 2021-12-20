@@ -66,7 +66,8 @@ class DBworker:
     def test_find_all(self):
         result = self.collection.find()
         for r in result:
-            print(r["createdAt"])
+            print(r["createdAt"], r["words"])
+            break
 
 
     def test_update(self):
