@@ -19,9 +19,9 @@ def run(url :str, crawler :Crawler, translater :Translater, idx :int, context_re
     print(f"thread {idx} done")
 
 
-@app.route("/ping", methods=["GET"])
+@app.route("/hello", methods=["GET"])
 def ping_pong():
-    return("pong", 200)
+    return("world", 200)
 
 
 @app.route("/crawl", methods=["POST"])
