@@ -1,6 +1,6 @@
-from newsCrawler import Crawler, UrlMaker
-from translater import Translater
-from mongo_db import DBworker
+from modules.newsCrawler import Crawler, UrlMaker
+from modules.translater import Translater
+from modules.mongo_db import DBworker
 from threading import Thread
 from flask import Flask, request
 import json
@@ -11,8 +11,8 @@ import traceback
 
 app = Flask(__name__)
 logging_client = logging_v2.Client()
-resource = Resource(type="cloud_function", labels={"function_name":"news-crawl-test", "region":"asia-northeast3"})
-logger = logging_v2.Logger(name="news-crawl-test",client=logging_client , resource=resource)
+resource = Resource(type="cloud_function", labels={"function_name":"news-crawl", "region":"asia-northeast3"})
+logger = logging_v2.Logger(name="news-crawl",client=logging_client , resource=resource)
 
 # 디버그 로그 작성
 def debug_log(msg :str):
