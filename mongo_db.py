@@ -44,6 +44,7 @@ class DBworker:
             word_dic[word] += 1
         return word_dic
 
+
     def save_result(self, results :list):
         word_dic = self.__merge_result(results)
         doc_format = {

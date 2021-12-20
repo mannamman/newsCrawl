@@ -3,6 +3,7 @@
     1. GCP function(cloudRun 호출용)
     2. GCP cloudRun
     2. AWS EC2
+
 ## 데이터베이스 및 언어
     1. python3.8
     1. MongoDB
