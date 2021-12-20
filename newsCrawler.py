@@ -33,10 +33,12 @@ class UrlMaker:
         self.country = country
         self.base_url = "https://www.google.com"
         self.crawl_timeout = 5
-    
+
+
     def __make_search_new_url(self, keyword :str):
         return f"{self.base_url}/search?q={keyword}&hl={self.country}&tbm=nws"
-    
+
+
     def __check_cache(self, urls):
         if(os.path.exists("cache")):
             with open("cache", "r") as f:
@@ -52,6 +54,7 @@ class UrlMaker:
             with open("cache", "w") as f:
                 f.write("\n".join(urls))
         return urls
+
 
     def get_news_urls(self, keyword :str) -> list:
         """

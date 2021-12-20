@@ -19,9 +19,9 @@ def run(url :str, crawler :Crawler, translater :Translater, idx :int, context_re
     print(f"thread {idx} done")
 
 
-@app.route("/ping", methods=["GET"])
+@app.route("/foo", methods=["GET"])
 def ping_pong():
-    return("pong", 200)
+    return("bar", 200)
 
 
 @app.route("/crawl", methods=["POST"])
@@ -59,6 +59,7 @@ def crawl():
             break
     db_worker.save_result(context_results)
     return("ok", 200)
+
 
 if(__name__ == "__main__"):
     app.run(host="0.0.0.0", port=8080, debug=False)
