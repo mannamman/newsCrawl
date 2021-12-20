@@ -1,5 +1,5 @@
 import pymongo
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import os
 import pytz
 import datetime
@@ -20,7 +20,7 @@ DB client	mongo
 
 class DBworker:
     def __init__(self, database :str, collection :str):
-        load_dotenv(dotenv_path=f"{os.getcwd()}/cred/.mongopasswd",verbose=True)
+        # load_dotenv(dotenv_path=f"{os.getcwd()}/cred/.mongopasswd",verbose=True)
         ip = os.getenv("ip")
         port = os.getenv("port")
         user = os.getenv("user")
