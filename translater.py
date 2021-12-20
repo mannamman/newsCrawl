@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-import requests
 import os
 import six
 from google.cloud import translate_v2 as translate
 from google.oauth2 import service_account
+
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize 
 
 """
 구글 번역 api
@@ -27,6 +29,7 @@ class Translater:
         self.api = api
         if(api):
             self.translate_client = self.__init_client()
+
     
     def __init_client(self):
         cred_path = f"{os.getcwd()}/cred/local_translate.json"
@@ -35,8 +38,21 @@ class Translater:
         return translate_client
 
 
+    def __word_preprocess(self, context :str) ->str:
+        # 불용어 제거
+        word_tokens = word_tokenize(context)
+        stops = set(stopwords.words('english'))
+        result = []
+        for word in word_tokens:
+            if word not in stops:
+                result.append(word)
+        return_str = " ".join(result)
+        return(" ".join(return_str))
+
+
     def translate(self, context :str) -> list:
         words = None
+        context = self.__word_preprocess(context)
         if(self.api):
             # api 사용
             if isinstance(context, six.binary_type):
