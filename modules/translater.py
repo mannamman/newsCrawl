@@ -38,7 +38,9 @@ class Translater:
         return translate_client
 
 
-    def __word_preprocess(self, context :str) ->str:
+    def __word_preprocess(self, context :str) -> list:
+        # 불필요한 수식 제거
+        context = self.__context_strip(context)
         # 불용어 제거
         word_tokens = word_tokenize(context)
         stops = set(stopwords.words('english'))
@@ -46,29 +48,32 @@ class Translater:
         for word in word_tokens:
             if word not in stops:
                 result.append(word)
-        return_str = " ".join(result)
-        return(" ".join(return_str))
+        # return_str = " ".join(result)
+        return result
 
 
     def translate(self, context :str) -> list:
-        words = None
-        context = self.__word_preprocess(context)
+        results = list()
+        words = self.__word_preprocess(context)
         if(self.api):
             # api 사용
-            if isinstance(context, six.binary_type):
-                context = context.decode("utf-8")
-            trans_result = self.translate_client.translate(context, target_language=self.target_lang)["translatedText"]
-            words = self.__context_strip(trans_result)
+            for word in words:    
+                if isinstance(word, six.binary_type):
+                    word = word.decode("utf-8")
+                trans_result = self.translate_client.translate(word, target_language=self.target_lang)["translatedText"]
+                results.append(trans_result)
+                # words = self.__context_strip(trans_result)
             
         else:
             # api 미사용
-            words = self.__context_strip(context)
-        return words
+            # words = self.__context_strip(context)
+            pass
+        return results
         
 
-    def __context_strip(self, context :str) -> list:
-        context = context.replace("”", " ")
-        context = context.replace("“", " ")
-        context = context.replace(";", " ")
-        words = context.split(" ")
-        return words
+    def __context_strip(self, context :str) -> str:
+        context = context.replace("”", "")
+        context = context.replace("“", "")
+        context = context.replace(";", "")
+        # words = context.split(" ")
+        return context
