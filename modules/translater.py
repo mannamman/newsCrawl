@@ -2,6 +2,8 @@
 import os
 import six
 from google.cloud import translate_v2 as translate
+## local 테스트 ##
+# from google.oauth2 import service_account
 
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize 
@@ -31,9 +33,12 @@ class Translater:
 
     
     def __init_client(self):
+        ## local 테스트 ##
         # cred_path = f"{os.getcwd()}/cred/local_translate.json"
         # credentials = service_account.Credentials.from_service_account_file(cred_path)
         # translate_client = translate.Client(credentials=credentials)
+
+        ## 배포시 사용 ##
         translate_client = translate.Client()
         return translate_client
 
@@ -48,12 +53,14 @@ class Translater:
         for word in word_tokens:
             if word not in stops:
                 result.append(word)
-        # return_str = " ".join(result)
         return result
 
 
     def translate(self, context :str) -> list:
         results = list()
+        # 불필요한 문자 제거
+        context = self.__context_strip(context)
+        # 문장 -> 단어들 변환
         words = self.__word_preprocess(context)
         if(self.api):
             # api 사용
@@ -62,11 +69,8 @@ class Translater:
                     word = word.decode("utf-8")
                 trans_result = self.translate_client.translate(word, target_language=self.target_lang)["translatedText"]
                 results.append(trans_result)
-                # words = self.__context_strip(trans_result)
-            
         else:
             # api 미사용
-            # words = self.__context_strip(context)
             pass
         return results
         

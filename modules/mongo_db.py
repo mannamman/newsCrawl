@@ -1,4 +1,5 @@
 import pymongo
+## local 테스트 ##
 # from dotenv import load_dotenv
 import os
 import pytz
@@ -20,6 +21,7 @@ DB client	mongo
 
 class DBworker:
     def __init__(self, database :str, collection :str):
+        ## local 테스트 ##
         # load_dotenv(dotenv_path=f"{os.getcwd()}/cred/.mongopasswd",verbose=True)
         ip = os.getenv("ip")
         port = os.getenv("port")
@@ -47,6 +49,11 @@ class DBworker:
 
     def save_result(self, results :list):
         word_dic = self.__merge_result(results)
+        ## local 테스트 ##
+        # print(word_dic)
+        # return
+
+        ## 배포시 사용 ##
         doc_format = {
             "createdAt" : self.kst,
             "words" : word_dic
