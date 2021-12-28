@@ -28,11 +28,11 @@ class Translater:
         contexts : 페이지의 내용들
         """
         self.api_base_url = "https://openapi.naver.com/v1/papago/n2mt"
-        self.http_method = "POST"
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.api = api
         self.max_size = 1024
+        self.stops = set(stopwords.words('english'))
         if(api):
             self.translate_client = self.__init_client()
     
@@ -57,10 +57,9 @@ class Translater:
         context = self.__context_strip(context)
         # 불용어 제거
         word_tokens = word_tokenize(context)
-        stops = set(stopwords.words('english'))
         result = []
         for word in word_tokens:
-            if word not in stops:
+            if word not in self.stops:
                 result.append(word)
         return result
 
