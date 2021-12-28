@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
 import six
-from google.cloud import translate_v2 as translate
+from google.cloud import translate_v3 as translate
+## local 테스트 ##
+# from google.oauth2 import service_account
 
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize 
@@ -11,6 +13,10 @@ from nltk.tokenize import word_tokenize
 공식 문서 : https://cloud.google.com/translate/docs/overview
 공식 문서(개발문서) : https://googleapis.dev/python/translation/3.1.0/index.html
 """
+
+# 상수
+location = "global"
+project_id = os.getenv("project_id")
 
 class Translater:
     def __init__(self, source_lang :str, target_lang :str, api :bool=False):
@@ -26,19 +32,29 @@ class Translater:
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.api = api
+        self.max_size = 1024
         if(api):
             self.translate_client = self.__init_client()
-
     
     def __init_client(self):
+        global location
+        global project_id
+        ## local 테스트 ##
         # cred_path = f"{os.getcwd()}/cred/local_translate.json"
         # credentials = service_account.Credentials.from_service_account_file(cred_path)
-        # translate_client = translate.Client(credentials=credentials)
-        translate_client = translate.Client()
+        # translate_client = translate.TranslationServiceClient(credentials=credentials)
+        # self.parent = f"projects/{credentials.project_id}/locations/{location}"
+        # return translate_client
+
+        ## 배포시 사용 ##
+        translate_client = translate.TranslationServiceClient()
+        self.parent = f"projects/{project_id}/locations/{location}"
         return translate_client
 
 
-    def __word_preprocess(self, context :str) ->str:
+    def __word_preprocess(self, context :str) -> list:
+        # 불필요한 수식 제거
+        context = self.__context_strip(context)
         # 불용어 제거
         word_tokens = word_tokenize(context)
         stops = set(stopwords.words('english'))
@@ -46,29 +62,34 @@ class Translater:
         for word in word_tokens:
             if word not in stops:
                 result.append(word)
-        return_str = " ".join(result)
-        return(" ".join(return_str))
+        return result
 
 
     def translate(self, context :str) -> list:
-        words = None
-        context = self.__word_preprocess(context)
+        results = list()
+        # 불필요한 문자 제거
+        context = self.__context_strip(context)
+        # 문장 -> 단어들 변환
+        words = self.__word_preprocess(context)
         if(self.api):
             # api 사용
-            if isinstance(context, six.binary_type):
-                context = context.decode("utf-8")
-            trans_result = self.translate_client.translate(context, target_language=self.target_lang)["translatedText"]
-            words = self.__context_strip(trans_result)
-            
+            res = self.translate_client.translate_text(
+                parent=self.parent,
+                contents=words,
+                mime_type="text/plain",
+                source_language_code=self.source_lang,
+                target_language_code=self.target_lang
+            )
+            results = [word.translated_text for word in res.translations]
         else:
             # api 미사용
-            words = self.__context_strip(context)
-        return words
+            pass
+        return results
         
 
-    def __context_strip(self, context :str) -> list:
-        context = context.replace("”", " ")
-        context = context.replace("“", " ")
-        context = context.replace(";", " ")
-        words = context.split(" ")
-        return words
+    def __context_strip(self, context :str) -> str:
+        context = context.replace("”", "")
+        context = context.replace("“", "")
+        context = context.replace(";", "")
+        # words = context.split(" ")
+        return context
