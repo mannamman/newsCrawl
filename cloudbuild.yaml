@@ -26,6 +26,8 @@ steps:
         --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID
       - '--region=$_DEPLOY_REGION'
       - '--quiet'
+      - '--cpu=2'
+      - '--memory=1024Mi'
     id: Deploy
     entrypoint: gcloud
 images:
