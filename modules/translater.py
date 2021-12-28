@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import six
-from google.cloud import translate_v2 as translate
+from google.cloud import translate_v3 as translate
 ## local 테스트 ##
 # from google.oauth2 import service_account
 
@@ -13,6 +13,10 @@ from nltk.tokenize import word_tokenize
 공식 문서 : https://cloud.google.com/translate/docs/overview
 공식 문서(개발문서) : https://googleapis.dev/python/translation/3.1.0/index.html
 """
+
+# 상수
+location = "global"
+project_id = os.getenv("project_id")
 
 class Translater:
     def __init__(self, source_lang :str, target_lang :str, api :bool=False):
@@ -28,18 +32,23 @@ class Translater:
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.api = api
+        self.max_size = 1024
         if(api):
             self.translate_client = self.__init_client()
-
     
     def __init_client(self):
+        global location
+        global project_id
         ## local 테스트 ##
         # cred_path = f"{os.getcwd()}/cred/local_translate.json"
         # credentials = service_account.Credentials.from_service_account_file(cred_path)
-        # translate_client = translate.Client(credentials=credentials)
+        # translate_client = translate.TranslationServiceClient(credentials=credentials)
+        # self.parent = f"projects/{credentials.project_id}/locations/{location}"
+        # return translate_client
 
         ## 배포시 사용 ##
-        translate_client = translate.Client()
+        translate_client = translate.TranslationServiceClient()
+        self.parent = f"projects/{project_id}/locations/{location}"
         return translate_client
 
 
@@ -64,11 +73,14 @@ class Translater:
         words = self.__word_preprocess(context)
         if(self.api):
             # api 사용
-            for word in words:    
-                if isinstance(word, six.binary_type):
-                    word = word.decode("utf-8")
-                trans_result = self.translate_client.translate(word, target_language=self.target_lang)["translatedText"]
-                results.append(trans_result)
+            res = self.translate_client.translate_text(
+                parent=self.parent,
+                contents=words,
+                mime_type="text/plain",
+                source_language_code=self.source_lang,
+                target_language_code=self.target_lang
+            )
+            results = [word.translated_text for word in res.translations]
         else:
             # api 미사용
             pass
