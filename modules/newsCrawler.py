@@ -98,7 +98,7 @@ class Crawler:
         context = ""
         try:
             for p_class in p_classes:
-                context += str(p_class.contents[0]) + "\n"
+                context += p_class.get_text() + "\n"
                 context = context.strip()
         except TypeError:
             pass
