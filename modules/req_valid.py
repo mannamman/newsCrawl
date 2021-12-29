@@ -48,7 +48,7 @@ def auth_deco(func):
             private_key = load_pem_private_key(private_key_str, password=secret)
 
             # 복호화
-            decrypted = private_key.decrypt(req_api_key, padding).decode("utf-8")
+            decrypted = private_key.decrypt(req_api_key.encode("utf-8"), padding).decode("utf-8")
             # 검사
             if(decrypted != env_api_key):
                 raise ValueError
