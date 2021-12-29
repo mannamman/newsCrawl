@@ -4,10 +4,13 @@ from modules.mongo_db import DBworker
 from threading import Thread
 from flask import Flask, request
 import json
+import functools
+from modules.req_valid import auth_deco
 # log
 from google.cloud import logging_v2
 from google.cloud.logging_v2 import Resource
 import traceback
+
 
 app = Flask(__name__)
 logging_client = logging_v2.Client()
@@ -23,6 +26,13 @@ def debug_log(msg :str):
 def error_log(msg :str):
     global logger
     logger.log_text(f"ERROR LOG : {msg}", severity="ERROR")
+
+
+def abstract_request(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(request)
+    return wrapper
 
 
 def pretty_trackback(msg :str)->str:
@@ -53,15 +63,19 @@ def run(url :str, crawler :Crawler, translater :Translater, idx :int, context_re
 
 
 @app.route("/ping", methods=["GET"])
-def ping_pong():
+@abstract_request
+@auth_deco
+def ping_pong(req):
     return("pong", 200)
 
 
 @app.route("/crawl", methods=["POST"])
-def crawl():
+@abstract_request
+@auth_deco
+def crawl(req):
     try:
         # post 메시지 파싱
-        recevied_msg = json.loads(request.get_data().decode("utf-8"))
+        recevied_msg = json.loads(req.get_data().decode("utf-8"))
         subject = recevied_msg["subject"]
         source_lang = recevied_msg["source_lang"]
         target_lang = recevied_msg["target_lang"]
