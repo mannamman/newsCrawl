@@ -41,7 +41,7 @@ def auth_deco(func):
             # 암호 불러오기
             private_key_str = os.environ.get('private', None).encode("utf-8")
             secret = os.environ.get("secret", None).encode("utf-8")
-            env_api_key = os.environ("apiKey", None)
+            env_api_key = os.environ.get("api_key", None)
 
             # 비공개 키 로드
             padding = OAEP(mgf=MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None)
