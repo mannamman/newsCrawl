@@ -28,6 +28,8 @@ steps:
       - '--quiet'
       - '--cpu=1'
       - '--memory=512Mi'
+      - '--concurrency=1'
+      - '--max-instances=1000'
     id: Deploy
     entrypoint: gcloud
 images:
