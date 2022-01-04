@@ -22,7 +22,7 @@
 
 - **여러나라의 뉴스를 수집** <br>
   source_language를 기반으로 특정 국가의 뉴스를 바탕으로 단어를 수집   
-  * source_language는 현재 eng,fr,jp,kr 존재하며 계속 추가할 예정
+  * source_language는 현재 eng, fr, jp, kr 존재하며 계속 추가할 예정
 
 - **단어 빈도 통계 및 시각화 지원(예정)**<br>
   언어-주제별로 단어들의 빈도수를 통계 및 시각화
