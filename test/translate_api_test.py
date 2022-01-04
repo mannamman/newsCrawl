@@ -18,9 +18,7 @@ def translate_text(source_lang, target_lang, texts):
         source_language_code="en",
         target_language_code="ko"
     )
-    for t in res.translations:
-        print(t.translated_text)
-    a = [i.translated_text for i in res.translated_text]
+    a = [i.translated_text for i in res.translations]
     print(a)
 
 translate_text("en", "ko", ["hello", "world!"])

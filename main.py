@@ -110,6 +110,7 @@ def crawl(req):
         error = traceback.format_exc()
         error = pretty_trackback(error)
         error_log(error)
+        db_worker.save_error(context_results)
         return(error, 400)
 
 

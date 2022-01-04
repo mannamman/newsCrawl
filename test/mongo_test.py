@@ -14,13 +14,14 @@ DB server	Mongod
 DB client	mongo
 """
 
-database = "snp500"
-collections = "ko"
+
+# database = "tesla"
+# collections = "ko"
 
 class DBworker:
-    def __init__(self):
-        global database
-        global collections
+    def __init__(self, database="tesla", collections="ko"):
+        # global database
+        # global collections
         load_dotenv(dotenv_path="../cred/.mongopasswd" ,verbose=True)
         ip = os.getenv("ip")
         port = os.getenv("port")
@@ -66,8 +67,7 @@ class DBworker:
     def test_find_all(self):
         result = self.collection.find()
         for r in result:
-            print(r["createdAt"], r["words"])
-            break
+            print(r["createdAt"])
 
 
     def test_update(self):
@@ -92,7 +92,7 @@ class DBworker:
 
 
     def test_delete_one(self):
-        self.collection.delete_one({"user" : "user"})
+        self.collection.delete_one({"createdAt" : "20211220_1454"})
     
     def test_delete_one_id(self, _id):
         self.collection.delete_one({"_id" : ObjectId(_id)})
@@ -103,5 +103,5 @@ class DBworker:
 if(__name__ == "__main__"):
     db = DBworker()
     db.test_find_all()
-    # db.test_find_one_createdAt("20211012_1405")
+    # db.test_find_one_createdAt("20211227_0900")
     # db.test_find_one()

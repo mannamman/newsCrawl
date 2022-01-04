@@ -32,6 +32,8 @@ class DBworker:
         self.db = self.client[database]
         # table 고정(collection)
         self.collection = self.db[collection]
+        # error가 발생한 단어들을 저장할 컬렉션
+        self.error_collection = self.db["ERROR"]
         # 저장되는 시간 설정
         KST = pytz.timezone("Asia/Seoul")
         utc_now = datetime.datetime.utcnow()
@@ -59,3 +61,20 @@ class DBworker:
             "words" : word_dic
         }
         self.collection.insert_one(doc_format)
+
+
+    # subject.error.yyyymmdd_hhmm
+    def save_error(self, contexts :list):
+        try:
+            contexts = list(itertools.chain(*contexts))
+            contexts = [str(word) for word in contexts]
+            contexts = ", ".join(contexts)
+        except TypeError as e:
+            contexts = f"TypeError {e}"
+        except Exception as e:
+            contexts = f"anyException {e}"
+        doc_format = {
+            "createdAt" : self.kst,
+            "context" : contexts
+        }
+        self.error_collection.insert_one(doc_format)
