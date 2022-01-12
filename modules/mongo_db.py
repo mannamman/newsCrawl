@@ -38,7 +38,10 @@ class DBworker:
         KST = pytz.timezone("Asia/Seoul")
         utc_now = datetime.datetime.utcnow()
         kst = pytz.utc.localize(utc_now).astimezone(KST)
-        self.kst = kst.strftime("%Y%m%d_%H%M")
+        sec = kst.second
+        ms = kst.microsecond
+        dt = datetime.timedelta(microseconds=ms, seconds=sec)
+        self.kst = kst - dt
 
 
     def __merge_result(self, results :list) -> defaultdict:
