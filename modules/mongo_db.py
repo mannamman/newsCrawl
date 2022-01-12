@@ -5,6 +5,7 @@ import os
 import pytz
 import datetime
 import itertools
+from uuid import uuid4
 from collections import defaultdict
 # ObjectId로 쿼리할때 필요
 from bson.objectid import ObjectId
@@ -60,6 +61,7 @@ class DBworker:
 
         ## 배포시 사용 ##
         doc_format = {
+            "uuid" : uuid4(),
             "createdAt" : self.kst,
             "words" : word_dic
         }
