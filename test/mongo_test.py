@@ -19,10 +19,11 @@ DB client	mongo
 # collections = "ko"
 
 class DBworker:
-    def __init__(self, database="tesla", collections="ko"):
+    def __init__(self, database="snp500", collections="ko"):
         # global database
         # global collections
-        load_dotenv(dotenv_path="../cred/.mongopasswd" ,verbose=True)
+        dot_env_path = os.path.dirname(os.path.abspath(__file__))
+        load_dotenv(dotenv_path=f"{dot_env_path}/../cred/.mongopasswd" ,verbose=True)
         ip = os.getenv("ip")
         port = os.getenv("port")
         user = os.getenv("user")
@@ -67,7 +68,7 @@ class DBworker:
     def test_find_all(self):
         result = self.collection.find()
         for r in result:
-            print(r["createdAt"])
+            print(r["createdAt"], r["uuid"])
 
 
     def test_update(self):
