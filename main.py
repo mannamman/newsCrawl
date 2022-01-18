@@ -16,6 +16,9 @@ app = Flask(__name__)
 logging_client = logging_v2.Client()
 resource = Resource(type="cloud_function", labels={"function_name":"news-crawl", "region":"asia-northeast3"})
 logger = logging_v2.Logger(name="news-crawl",client=logging_client , resource=resource)
+# 객체 초기화(공통으로 사용되는)
+crawler = Crawler()
+translater = Translater()
 
 # 디버그 로그 작성
 def debug_log(msg :str):
@@ -50,14 +53,17 @@ def pretty_trackback(msg :str)->str:
     return msg
 
 
-def run(url :str, crawler :Crawler, translater :Translater, idx :int, context_results :list):
+def run(
+    url :str, crawler :Crawler, translater :Translater, idx :int,
+    context_results :list, source_lang :str, target_lang :str
+):
     print(f"thread {idx} start")
     context = crawler.crawl(url)
     if(context == ""):
         print(f"thread {idx} fail")
         context_results[idx] = ""
         return
-    result = translater.translate(context)
+    result = translater.translate(context, source_lang, target_lang)
     context_results[idx] = result
     print(f"thread {idx} done")
 
@@ -73,21 +79,20 @@ def ping_pong(req):
 @abstract_request
 @auth_deco
 def crawl(req):
+    global crawler
+    global translater
     try:
         # post 메시지 파싱
         recevied_msg = json.loads(req.get_data().decode("utf-8"))
         subject = recevied_msg["subject"]
         source_lang = recevied_msg["source_lang"]
         target_lang = recevied_msg["target_lang"]
-        api = recevied_msg["api"]
 
         # get urls
         url_maker = UrlMaker(source_lang)
         urls = url_maker.get_news_urls(subject)
 
-        # 객체 초기화
-        crawler = Crawler()
-        translater = Translater(source_lang=source_lang, target_lang=target_lang, api=api)
+        # db worker 객체 생성
         db_worker = DBworker(database=subject, collection=target_lang)
 
         # 쓰레드 실행
@@ -95,7 +100,7 @@ def crawl(req):
         context_results = [0] * len(urls) # 결과 값을 받기위한 배열
 
         for idx, url in enumerate(urls):
-            thread = Thread(target=run, args=(url, crawler, translater, idx, context_results))
+            thread = Thread(target=run, args=(url, crawler, translater, idx, context_results, source_lang, target_lang))
             threads.append(thread)
         for thread in threads:
             thread.start()

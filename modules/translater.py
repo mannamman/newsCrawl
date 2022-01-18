@@ -19,7 +19,7 @@ location = "global"
 project_id = os.getenv("project_id")
 
 class Translater:
-    def __init__(self, source_lang :str, target_lang :str, api :bool=False):
+    def __init__(self):
         """
         Translater 클래스는 크롤링한 데이터를 받아 번역을 해주는 클래스
         source_lang : 크롤링한 원본 언어
@@ -28,13 +28,10 @@ class Translater:
         contexts : 페이지의 내용들
         """
         self.api_base_url = "https://openapi.naver.com/v1/papago/n2mt"
-        self.source_lang = source_lang
-        self.target_lang = target_lang
-        self.api = api
         self.max_size = 1024
         self.stops = set(stopwords.words('english'))
-        if(api):
-            self.translate_client = self.__init_client()
+        self.translate_client = self.__init_client()
+        self.translate_timeout = 100
     
     def __init_client(self):
         global location
@@ -64,25 +61,22 @@ class Translater:
         return result
 
 
-    def translate(self, context :str) -> list:
+    def translate(self, context :str, source_lang :str, target_lang :str) -> list:
         results = list()
         # 불필요한 문자 제거
         context = self.__context_strip(context)
         # 문장 -> 단어들 변환
         words = self.__word_preprocess(context)
-        if(self.api):
-            # api 사용
-            res = self.translate_client.translate_text(
-                parent=self.parent,
-                contents=words,
-                mime_type="text/plain",
-                source_language_code=self.source_lang,
-                target_language_code=self.target_lang
-            )
-            results = [word.translated_text for word in res.translations]
-        else:
-            # api 미사용
-            pass
+        # api 사용
+        res = self.translate_client.translate_text(
+            parent=self.parent,
+            contents=words,
+            mime_type="text/plain",
+            source_language_code=source_lang,
+            target_language_code=target_lang,
+            timeout = self.translate_timeout
+        )
+        results = [word.translated_text for word in res.translations]
         return results
         
 
