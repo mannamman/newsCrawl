@@ -35,7 +35,9 @@ Jinja2==3.0.3
 joblib==1.1.0
 MarkupSafe==2.0.1
 Naked==0.1.31
+nltk
 numpy==1.22.1
+pandas
 packaging==21.3
 Pillow==9.0.0
 proto-plus==1.19.8
@@ -47,6 +49,7 @@ pyflakes==2.4.0
 pymongo==3.12.1
 pyparsing==3.0.6
 python-dotenv==0.19.2
+pytorch_pretrained_bert
 pytz==2021.3
 PyYAML==6.0
 regex==2021.11.10
