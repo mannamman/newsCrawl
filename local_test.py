@@ -1,8 +1,9 @@
-from testModules.newsCrawler import Crawler, UrlMaker, NltkWorker
-from testModules.translater import Translater
+from testModules.newsCrawler import HeaderCrawler
 from testModules.mongo_db import DBworker
 from testModules.file_worker import FileWorker
-from threading import Thread
+from sentiment_dir.sentiment import NewsSentiment
+import pytz
+import datetime
 import json
 import functools
 # log
@@ -10,10 +11,10 @@ import traceback
 import time
 
 # 객체 초기화(공통으로 사용되는)
-crawler = Crawler()
-nltk_worker = NltkWorker()
-translater = Translater()
 file_worker = FileWorker()
+news_sentiment = NewsSentiment()
+
+KST = pytz.timezone("Asia/Seoul")
 
 
 def pretty_trackback(msg :str)->str:
@@ -31,60 +32,40 @@ def pretty_trackback(msg :str)->str:
     return msg
 
 
-def run(
-    url :str, crawler :Crawler, translater :Translater, idx :int,
-    context_results :list, source_lang :str, target_lang :str
-):
-    global nltk_worker
-    print(f"thread {idx} start")
-    context = crawler.crawl(url)
-    if(context == ""):
-        print(f"thread {idx} fail")
-        context_results[idx] = ""
-        return
-    context_results[idx] = nltk_worker.preprocess(context)
-    print(f"thread {idx} done")
-
 def crawl():
-    global crawler
-    global translater
     global file_worker
+    global news_sentiment
+    global KST
 
     start = time.time()
+    utc_now = datetime.datetime.utcnow()
+    kst = pytz.utc.localize(utc_now).astimezone(KST)
     try:
         subject = "snp500"
         source_lang = "en"
-        target_lang = "ko"
+        # print(kst.strftime("%Y-%m-%d_%H:%M:00"))
 
         # get urls
-        url_maker = UrlMaker(source_lang)
-        urls = url_maker.get_news_urls(subject)
+        header_crawler = HeaderCrawler("en")
 
         # db worker 객체 생성
-        db_worker = DBworker(database=subject, collection=target_lang)
+        db_worker = DBworker(database=subject, collection=source_lang, kst=kst)
 
-        # 쓰레드 실행
-        threads = list()
-        context_results = [0] * len(urls) # 결과 값을 받기위한 배열
+        eng_headers, translated_headers = header_crawler.get_news_header(subject)
 
-        for idx, url in enumerate(urls):
-            thread = Thread(target=run, args=(url, crawler, translater, idx, context_results, source_lang, target_lang))
-            threads.append(thread)
-        for thread in threads:
-            thread.start()
+        sentiment_results = list()
+        for header in eng_headers:
+            res = news_sentiment.pred(header)
+            sentiment_results.append(res)
 
-        # 남은 쓰레드 대기
-        while True:
-            if(0 not in context_results):
-                break
-        input_uri, output_uri = file_worker.save_and_upload(context_results)
-        translater.batch_translate(source_lang, target_lang, input_uri, output_uri)
-        # db_worker.save_result(context_results)
+        file_worker.upload_result(eng_headers, translated_headers, source_lang, subject, kst, sentiment_results)
+        db_worker.save_result(sentiment_results)
         print(round((time.time() - start), 2))
         return("ok", 200)
     except Exception:
         error = traceback.format_exc()
         error = pretty_trackback(error)
+        print(error)
         return(error, 400)
 
 
