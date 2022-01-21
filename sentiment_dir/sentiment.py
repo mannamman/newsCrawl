@@ -1,5 +1,6 @@
 from transformers import AutoModelForSequenceClassification
 from transformers import AutoTokenizer
+
 import numpy as np
 from scipy.special import softmax
 import os
@@ -37,5 +38,5 @@ class NewsSentiment:
 
 if(__name__ == "__main__"):
     test = NewsSentiment()
-    text = ""
+    text = "Inflation at 40-year high pressures consumers, Fed and Biden"
     print(test.pred(text))
