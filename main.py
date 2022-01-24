@@ -6,7 +6,7 @@ from modules.req_valid import auth_deco
 from modules.log_module import Logger
 
 ## sentiment sentiment analysis
-from sentiment_dir.sentiment import NewsSentiment
+from finBERT.sentiment import FinBert
 
 # web server
 from flask import Flask, request
@@ -27,7 +27,7 @@ logger = Logger()
 # 객체 초기화(공통으로 사용되는)
 target_lang ="en"
 file_worker = FileWorker()
-news_sentiment = NewsSentiment()
+sentiment_finbert = FinBert()
 KST = pytz.timezone("Asia/Seoul")
 
 
@@ -66,7 +66,7 @@ def ping_pong(req):
 @auth_deco
 def crawl(req):
     global file_worker
-    global news_sentiment
+    global sentiment_finbert
     global KST
     global target_lang
     global logger
@@ -88,7 +88,7 @@ def crawl(req):
 
         sentiment_results = list()
         for header in eng_headers:
-            res = news_sentiment.pred(header)
+            res = sentiment_finbert.pred(header)
             sentiment_results.append(res)
 
         file_worker.upload_result(eng_headers, translated_headers, source_lang, subject, kst, sentiment_results)
