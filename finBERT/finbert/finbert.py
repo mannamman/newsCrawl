@@ -577,7 +577,7 @@ class FinBert(object):
         return evaluation_df
 
 
-def predict(text, model, write_to_csv=False, path=None):
+def predict(text, model, config_path, write_to_csv=False, path=None):
     """
     Predict sentiments of sentences in a given text. The function first tokenizes sentences, make predictions and write
     results.
@@ -592,7 +592,7 @@ def predict(text, model, write_to_csv=False, path=None):
         path to write the string
     """
     model.eval()
-    tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+    tokenizer = AutoTokenizer.from_pretrained(config_path)
     sentences = sent_tokenize(text)
 
     label_list = ['positive', 'negative', 'neutral']
