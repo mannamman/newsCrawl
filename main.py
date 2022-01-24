@@ -1,34 +1,34 @@
-from modules.newsCrawler import Crawler, UrlMaker
-from modules.translater import Translater
+## moduels ##
+from modules.newsCrawler import HeaderCrawler
 from modules.mongo_db import DBworker
-from threading import Thread
+from modules.file_worker import FileWorker
+from modules.req_valid import auth_deco
+from modules.log_module import Logger
+
+## sentiment sentiment analysis
+from sentiment_dir.sentiment import NewsSentiment
+
+# web server
 from flask import Flask, request
+
+# bulit in
 import json
 import functools
-from modules.req_valid import auth_deco
-# log
-from google.cloud import logging_v2
-from google.cloud.logging_v2 import Resource
 import traceback
+import pytz
+import datetime
+
 
 
 app = Flask(__name__)
-logging_client = logging_v2.Client()
-resource = Resource(type="cloud_function", labels={"function_name":"news-crawl", "region":"asia-northeast3"})
-logger = logging_v2.Logger(name="news-crawl",client=logging_client , resource=resource)
+
+logger = Logger()
+
 # 객체 초기화(공통으로 사용되는)
-crawler = Crawler()
-translater = Translater()
-
-# 디버그 로그 작성
-def debug_log(msg :str):
-    global logger
-    logger.log_text(msg, severity="DEBUG")
-
-
-def error_log(msg :str):
-    global logger
-    logger.log_text(f"ERROR LOG : {msg}", severity="ERROR")
+target_lang ="en"
+file_worker = FileWorker()
+news_sentiment = NewsSentiment()
+KST = pytz.timezone("Asia/Seoul")
 
 
 def abstract_request(func):
@@ -53,20 +53,6 @@ def pretty_trackback(msg :str)->str:
     return msg
 
 
-def run(
-    url :str, crawler :Crawler, translater :Translater, idx :int,
-    context_results :list, source_lang :str, target_lang :str
-):
-    print(f"thread {idx} start")
-    context = crawler.crawl(url)
-    if(context == ""):
-        print(f"thread {idx} fail")
-        context_results[idx] = ""
-        return
-    result = translater.translate(context, source_lang, target_lang)
-    context_results[idx] = result
-    print(f"thread {idx} done")
-
 
 @app.route("/ping", methods=["GET"])
 @abstract_request
@@ -79,43 +65,40 @@ def ping_pong(req):
 @abstract_request
 @auth_deco
 def crawl(req):
-    global crawler
-    global translater
+    global file_worker
+    global news_sentiment
+    global KST
+    global target_lang
+    global logger
+
+    utc_now = datetime.datetime.utcnow()
+    kst = pytz.utc.localize(utc_now).astimezone(KST)
     try:
         # post 메시지 파싱
         recevied_msg = json.loads(req.get_data().decode("utf-8"))
         subject = recevied_msg["subject"]
         source_lang = recevied_msg["source_lang"]
-        target_lang = recevied_msg["target_lang"]
 
-        # get urls
-        url_maker = UrlMaker(source_lang)
-        urls = url_maker.get_news_urls(subject)
+        header_crawler = HeaderCrawler(target_lang)
 
         # db worker 객체 생성
-        db_worker = DBworker(database=subject, collection=target_lang)
+        db_worker = DBworker(database=subject, collection=source_lang, kst=kst)
 
-        # 쓰레드 실행
-        threads = list()
-        context_results = [0] * len(urls) # 결과 값을 받기위한 배열
+        eng_headers, translated_headers = header_crawler.get_news_header(subject)
 
-        for idx, url in enumerate(urls):
-            thread = Thread(target=run, args=(url, crawler, translater, idx, context_results, source_lang, target_lang))
-            threads.append(thread)
-        for thread in threads:
-            thread.start()
+        sentiment_results = list()
+        for header in eng_headers:
+            res = news_sentiment.pred(header)
+            sentiment_results.append(res)
 
-        # 남은 쓰레드 대기
-        while True:
-            if(0 not in context_results):
-                break
-        db_worker.save_result(context_results)
+        file_worker.upload_result(eng_headers, translated_headers, source_lang, subject, kst, sentiment_results)
+        db_worker.save_result(sentiment_results)
+
         return("ok", 200)
     except Exception:
         error = traceback.format_exc()
         error = pretty_trackback(error)
-        error_log(error)
-        db_worker.save_error(context_results)
+        logger.error_log(error)
         return(error, 400)
 
 

@@ -1,9 +1,5 @@
-from google.oauth2 import service_account
 from google.cloud import storage
-from google.cloud.exceptions import NotFound as blob_not_found
-import os
-import mimetypes
-from uuid import uuid4
+# from google.cloud.exceptions import NotFound as blob_not_found
 import tempfile
 import datetime
 import io
@@ -19,17 +15,18 @@ class FileWorker:
     # 인증정보 로딩
     def _load_client(self):
         ## local ##
-        key_dir_path = os.path.dirname(os.path.abspath(__file__))
-        key_path = f"{key_dir_path}/../cred/local_translate.json"
-        credentials = service_account.Credentials.from_service_account_file(
-            key_path, scopes=["https://www.googleapis.com/auth/devstorage.read_write"],
-        )
-        self.storage_client = storage.Client(credentials=credentials, project=credentials.project_id)
-        self.bucket = self.storage_client.get_bucket(self.bucket_name)
+        # from google.oauth2 import service_account
+        # key_dir_path = os.path.dirname(os.path.abspath(__file__))
+        # key_path = f"{key_dir_path}/../cred/local_translate.json"
+        # credentials = service_account.Credentials.from_service_account_file(
+        #     key_path, scopes=["https://www.googleapis.com/auth/devstorage.read_write"],
+        # )
+        # self.storage_client = storage.Client(credentials=credentials, project=credentials.project_id)
+        # self.bucket = self.storage_client.get_bucket(self.bucket_name)
 
         ## gcp cloud ##
-        # self.storage_client = storage.Client()
-        # self.bucket = self.storage_client.get_bucket(self.bucket_name)
+        self.storage_client = storage.Client()
+        self.bucket = self.storage_client.get_bucket(self.bucket_name)
 
 
     def upload_result(

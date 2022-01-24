@@ -58,8 +58,9 @@ def crawl():
             res = news_sentiment.pred(header)
             sentiment_results.append(res)
 
-        file_worker.upload_result(eng_headers, translated_headers, source_lang, subject, kst, sentiment_results)
-        db_worker.save_result(sentiment_results)
+        print(sentiment_results)
+        # file_worker.upload_result(eng_headers, translated_headers, source_lang, subject, kst, sentiment_results)
+        # db_worker.save_result(sentiment_results)
         print(round((time.time() - start), 2))
         return("ok", 200)
     except Exception:

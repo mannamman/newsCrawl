@@ -1,27 +1,35 @@
 # -*- coding: utf-8 -*-
 import requests
 from bs4 import BeautifulSoup
+from testModules.translater import Translater
 import os
 import re
+import copy
 
 """
 현재까지 알아낸 국가코드 (google)
 
-eng : https://www.google.co.uk/webhp?hl=en
-fr : https://www.google.fr/webhp?hl=fr
-jp : https://www.google.com/webhp?hl=ja
-kr : https://www.google.com/webhp?hl=kr
+eng : https://news.google.co.uk/webhp?hl=en
+fr : https://news.google.fr/webhp?hl=fr
+jp : https://news.google.com/webhp?hl=ja
+kr : https://news.google.com/webhp?hl=kr
+
 
 예시
-https://www.google.com/search?q=stackoverflow&hl=ja
+eng : https://news.google.com/search?q=snp500&hl=en-US&gl=US
 
 뉴스 url이 저장된 클래스 id
-div id = ZINbbc xpd O9g5cc uUPGi
+h3 = ipQwMb ekueJc RD0gLb
 
 """
 # g-card class="ftSUBd"
 
-class UrlMaker:
+# https://dojang.io/mod/page/view.php?id=2469 async 참고 자료
+
+translater = Translater()
+
+
+class HeaderCrawler:
     """
     언어에 맞는 뉴스의 url을 반환하는 클래스
     """
@@ -31,12 +39,13 @@ class UrlMaker:
         country : 특정 국가에서 검색한 내용을 얻기위한 국가 코드
         """
         self.country = country
-        self.base_url = "https://www.google.com"
+        self.base_url = "https://news.google.com"
         self.crawl_timeout = 5
 
 
     def __make_search_new_url(self, keyword :str):
-        return f"{self.base_url}/search?q={keyword}&hl={self.country}&tbm=nws"
+        # return f"{self.base_url}/search?q={keyword}&hl={self.country}&tbm=nws&lr=lang_{self.country}"
+        return f"{self.base_url}/search?q={keyword}&hl={self.country}&gl=en"
 
 
     def __check_cache(self, urls):
@@ -56,64 +65,29 @@ class UrlMaker:
         return urls
 
 
-    def get_news_urls(self, keyword :str) -> list:
-        """
-        keyword를 입력받아서 뉴스 url을 반환
-        """
+    def get_news_header(self, keyword :str) -> list:
         url = self.__make_search_new_url(keyword)
+        print(url)
         html_text = requests.get(url, timeout=self.crawl_timeout).text
+        with open("test.html", "w") as f:
+            f.write(html_text)
         soup = BeautifulSoup(html_text, 'html.parser')
-        news_cards_list = soup.find_all(class_="ZINbbc xpd O9g5cc uUPGi")
-        news_urls = []
+        news_cards_list = soup.find_all("h3", "ipQwMb ekueJc RD0gLb")
+        news_headers = []
         for news_card in news_cards_list:
-            # print(news_card)
-            a = news_card.find("a")
-            href = a["href"]
-            if("https" in href):
-                url_index = href.index("https")
-            elif("http" in href):
-                url_index = href.index("http")
-            else:
-                continue
-            url = href[url_index:]
-            param_index = url.index("&")
-            url = url[:param_index]
-            news_urls.append(url)
-        return news_urls
+            news_headers.append(news_card.text)
+        translated_header = None
+        if(self.country != "en"):
+            translated_header = copy.copy(news_headers)
+            translated_header = self._to_eng(translated_header)
+        return news_headers ,translated_header
 
 
-class Crawler:
-    """
-    크롤링만 하는 클래스
-    """
-    def __init__(self):
-         self.CLEANR = re.compile('<.*?>')
-         self.crawl_timeout = 5
+    def _to_eng(self, headers):
+        global translater
+        en_headers = translater.translate(headers, self.country, "en")
+        return en_headers
 
-
-    def __news_crawl(self, url :str) -> str:
-        html_text = requests.get(url, timeout=self.crawl_timeout).text
-        soup = BeautifulSoup(html_text, 'html.parser')
-        p_classes = soup.find_all("p")
-        context = ""
-        try:
-            for p_class in p_classes:
-                context += p_class.get_text() + "\n"
-                context = context.strip()
-        except TypeError:
-            pass
-        except IndexError:
-            pass
-        return context
-
-
-    def crawl(self, url):
-        try:
-            context = self.__news_crawl(url)
-        except requests.exceptions.Timeout:
-            # log?
-            return ""
-        cleantext = re.sub(self.CLEANR, ' ', context)
-        cleantext = cleantext.strip().lower()
-        return cleantext
-    
+if(__name__ == "__main__"):
+    news_header = HeaderCrawler("en")
+    print(news_header.get_news_header("tesla"))
