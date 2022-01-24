@@ -1,7 +1,7 @@
 from testModules.newsCrawler import HeaderCrawler
 from testModules.mongo_db import DBworker
 from testModules.file_worker import FileWorker
-from sentiment_dir.sentiment import NewsSentiment
+from finBERT.sentiment import FinBert
 import pytz
 import datetime
 import json
@@ -12,7 +12,7 @@ import time
 
 # 객체 초기화(공통으로 사용되는)
 file_worker = FileWorker()
-news_sentiment = NewsSentiment()
+sentiment_finbert = FinBert()
 
 KST = pytz.timezone("Asia/Seoul")
 
@@ -34,7 +34,7 @@ def pretty_trackback(msg :str)->str:
 
 def crawl():
     global file_worker
-    global news_sentiment
+    global sentiment_finbert
     global KST
 
     start = time.time()
@@ -55,7 +55,7 @@ def crawl():
 
         sentiment_results = list()
         for header in eng_headers:
-            res = news_sentiment.pred(header)
+            res = sentiment_finbert.pred(header)
             sentiment_results.append(res)
 
         print(sentiment_results)

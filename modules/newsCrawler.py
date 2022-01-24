@@ -69,8 +69,6 @@ class HeaderCrawler:
         url = self.__make_search_new_url(keyword)
         print(url)
         html_text = requests.get(url, timeout=self.crawl_timeout).text
-        with open("test.html", "w") as f:
-            f.write(html_text)
         soup = BeautifulSoup(html_text, 'html.parser')
         news_cards_list = soup.find_all("h3", "ipQwMb ekueJc RD0gLb")
         news_headers = []

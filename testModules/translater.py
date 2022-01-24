@@ -39,9 +39,9 @@ class Translater:
         return translate_client
 
         ## 배포시 사용 ##
-        translate_client = translate.TranslationServiceClient()
-        self.parent = f"projects/{project_id}/locations/{location}"
-        return translate_client
+        # translate_client = translate.TranslationServiceClient()
+        # self.parent = f"projects/{project_id}/locations/{location}"
+        # return translate_client
 
 
     def translate(self, headers :str, source_lang :str, target_lang :str="en") -> list:

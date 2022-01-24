@@ -3,3 +3,6 @@ venv
 # 불피요한 파일들 제외
 ref
 test
+sentiment_dir
+.git
+.DS_Store
