@@ -1,6 +1,6 @@
 import pymongo
 ## local 테스트 ##
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 import os
 import pytz
 import datetime
@@ -23,8 +23,8 @@ DB client	mongo
 class DBworker:
     def __init__(self, database :str, collection :str , kst :datetime.datetime):
         ## local 테스트 ##
-        # dot_env_path = os.path.dirname(os.path.abspath(__file__))
-        # load_dotenv(dotenv_path=f"{dot_env_path}/../cred/.mongopasswd",verbose=True)
+        dot_env_path = os.path.dirname(os.path.abspath(__file__))
+        load_dotenv(dotenv_path=f"{dot_env_path}/../cred/.mongopasswd",verbose=True)
         ip = os.getenv("ip")
         port = os.getenv("port")
         user = os.getenv("user")

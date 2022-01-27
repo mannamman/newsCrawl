@@ -9,10 +9,10 @@ import copy
 """
 현재까지 알아낸 국가코드 (google)
 
-eng : https://news.google.com/topstories?hl=en
-fr : https://news.google.com/topstories?hl=fr
-jp : https://news.google.com/topstories?hl=ja
-kr : https://news.google.com/topstories?hl=kr
+eng : https://news.google.co.uk/webhp?hl=en
+fr : https://news.google.fr/webhp?hl=fr
+jp : https://news.google.com/webhp?hl=ja
+kr : https://news.google.com/webhp?hl=kr
 
 
 예시

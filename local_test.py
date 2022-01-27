@@ -1,8 +1,6 @@
-from modules.newsCrawler import HeaderCrawler
-from modules.mongo_db import DBworker
-from modules.file_worker import FileWorker
-from modules.req_valid import auth_deco
-from modules.log_module import Logger
+from testModules.newsCrawler import HeaderCrawler
+from testModules.mongo_db import DBworker
+from testModules.file_worker import FileWorker
 from finBERT.sentiment import FinBert
 import pytz
 import datetime
@@ -10,11 +8,13 @@ import json
 import functools
 # log
 import traceback
+import time
 # multi process
 from math import ceil
 from multiprocessing import Pool
 import os
-# server
+
+# flask 모사
 from flask import request, Flask
 
 app = Flask(__name__)
@@ -22,17 +22,8 @@ app = Flask(__name__)
 # 객체 초기화(공통으로 사용되는)
 file_worker = FileWorker()
 sentiment_finbert = FinBert()
-logger = Logger()
-
 
 KST = pytz.timezone("Asia/Seoul")
-
-
-def abstract_request(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        return func(request)
-    return wrapper
 
 
 def pretty_trackback(msg :str)->str:
@@ -86,49 +77,37 @@ def save_result(subject, source_lang, origin_headers, translated_headers, kst, s
     db_worker.save_result(sentiment_results)
 
 
-@app.route("/sentiment", methods=["POST"])
-@abstract_request
-@auth_deco
-def index(req):
+@app.route("/test", methods=["GET"])
+def index():
     global KST
-    global logger
 
-    try:
-        # post 메시지 파싱
-        recevied_msg = json.loads(req.get_data().decode("utf-8"))
-        subject = recevied_msg["subject"]
-        source_lang = recevied_msg["source_lang"]
+    subject = "snp500"
+    source_lang = "en"
 
-        utc_now = datetime.datetime.utcnow()
-        kst = pytz.utc.localize(utc_now).astimezone(KST)
+    utc_now = datetime.datetime.utcnow()
+    kst = pytz.utc.localize(utc_now).astimezone(KST)
 
-        origin_headers, translated_headers = crawl(subject, source_lang)
+    origin_headers, translated_headers = crawl(subject, source_lang)
 
-        headers_len = len(origin_headers)
-        sentiment_results = list()
-        cpu_count = os.cpu_count()
+    headers_len = len(origin_headers)
+    sentiment_results = list()
+    cpu_count = os.cpu_count()
 
-        if(translated_headers is None):
-            translated_headers = origin_headers
+    if(translated_headers is None):
+        translated_headers = origin_headers
 
-        translated_headers = [(idx+1, header) for idx, header in enumerate(translated_headers)]
+    translated_headers = [(idx+1, header) for idx, header in enumerate(translated_headers)]
 
-        chunks = make_chunk(translated_headers, headers_len, cpu_count)
+    chunks = make_chunk(translated_headers, headers_len, cpu_count)
 
-        for chunk_idx, chunk in enumerate(chunks):
-            pool_len = len(chunk)
-            with Pool(pool_len) as pool:
-                res = pool.map(sentiment_analysis_fin, chunk)
-                sentiment_results.extend(res)
-
-        save_result(subject, source_lang, origin_headers, translated_headers, kst, sentiment_results)
-        return("ok", 200)
-    except Exception:
-        error = traceback.format_exc()
-        error = pretty_trackback(error)
-        logger.error_log(error)
-        return(error, 400)
-
+    for chunk_idx, chunk in enumerate(chunks):
+        pool_len = len(chunk)
+        with Pool(pool_len) as pool:
+            res = pool.map(sentiment_analysis_fin, chunk)
+            sentiment_results.extend(res)
+    print(sentiment_results)
+    return("ok", 200)
+    # save_result(subject, source_lang, origin_headers, translated_headers, kst, sentiment_results)
 
 if(__name__ == "__main__"):
     app.run(host="0.0.0.0", port=8080, debug=False)

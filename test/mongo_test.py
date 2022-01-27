@@ -19,7 +19,7 @@ DB client	mongo
 # collections = "ko"
 
 class DBworker:
-    def __init__(self, database="snp500", collections="ko"):
+    def __init__(self, database="tesla", collections="ko"):
         # global database
         # global collections
         dot_env_path = os.path.dirname(os.path.abspath(__file__))
@@ -68,7 +68,9 @@ class DBworker:
     def test_find_all(self):
         result = self.collection.find()
         for r in result:
-            print(r["createdAt"], r["uuid"])
+            if("sentiment" not in r):
+                continue
+            print(r["createdAt"], r["sentiment"])
 
 
     def test_update(self):
@@ -87,9 +89,9 @@ class DBworker:
 
     def test_remove_all(self):
         # 모두 삭제
-        self.colletion.remove()
+        self.collection.remove()
         # 조건에 맞는 모든 문서 삭제
-        self.colletion.remove({"user" : "kim"})
+        # self.colletion.remove({"user" : "kim"})
 
 
     def test_delete_one(self):
@@ -106,3 +108,4 @@ if(__name__ == "__main__"):
     db.test_find_all()
     # db.test_find_one_createdAt("20211227_0900")
     # db.test_find_one()
+    # db.test_remove_all()
