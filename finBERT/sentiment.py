@@ -22,9 +22,7 @@ class FinBert:
         return return_dic
 
     def pred(self, text):
-        print(f"{text} start ...")
         res = json.loads(predict(text, self.model, self.path).to_json(orient='records'))[0]
-        print(f"{text} end ...")
         return self._make_dic(text, res["logit"])
 
 

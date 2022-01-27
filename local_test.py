@@ -9,6 +9,15 @@ import functools
 # log
 import traceback
 import time
+# multi process
+from math import ceil
+from multiprocessing import Pool
+import os
+
+# flask 모사
+from flask import request, Flask
+
+app = Flask(__name__)
 
 # 객체 초기화(공통으로 사용되는)
 file_worker = FileWorker()
@@ -32,43 +41,74 @@ def pretty_trackback(msg :str)->str:
     return msg
 
 
-def crawl():
-    global file_worker
+def crawl(subject, source_lang):
+    # get urls
+    # contury code
+    header_crawler = HeaderCrawler(source_lang)
+    origin_headers, translated_headers = header_crawler.get_news_header(subject)
+    return origin_headers, translated_headers
+
+
+def sentiment_analysis_fin(*args):
     global sentiment_finbert
+
+    process_id, header = args[0]
+    res = sentiment_finbert.pred(header)
+    # print(f"process {process_id} : {res}")
+    return res
+
+
+def make_chunk(headers, headers_len, cpu_count):
+    return list(
+        map(
+            lambda x: headers[x*cpu_count:x*cpu_count+cpu_count],
+            [i for i in range(ceil(headers_len/cpu_count))]
+        )
+    )
+
+
+def save_result(subject, source_lang, origin_headers, translated_headers, kst, sentiment_results):
+    global file_worker
+
+    db_worker = DBworker(database=subject, collection=source_lang, kst=kst)
+
+    file_worker.upload_result(origin_headers, translated_headers, source_lang, subject, kst, sentiment_results)
+
+    db_worker.save_result(sentiment_results)
+
+
+@app.route("/test", methods=["GET"])
+def index():
     global KST
 
-    start = time.time()
+    subject = "snp500"
+    source_lang = "en"
+
     utc_now = datetime.datetime.utcnow()
     kst = pytz.utc.localize(utc_now).astimezone(KST)
-    try:
-        subject = "snp500"
-        source_lang = "en"
-        # print(kst.strftime("%Y-%m-%d_%H:%M:00"))
 
-        # get urls
-        header_crawler = HeaderCrawler("en")
+    origin_headers, translated_headers = crawl(subject, source_lang)
 
-        # db worker 객체 생성
-        db_worker = DBworker(database=subject, collection=source_lang, kst=kst)
+    headers_len = len(origin_headers)
+    sentiment_results = list()
+    cpu_count = os.cpu_count()
 
-        eng_headers, translated_headers = header_crawler.get_news_header(subject)
+    if(translated_headers is None):
+        translated_headers = origin_headers
 
-        sentiment_results = list()
-        for header in eng_headers:
-            res = sentiment_finbert.pred(header)
-            sentiment_results.append(res)
+    translated_headers = [(idx+1, header) for idx, header in enumerate(translated_headers)]
 
-        print(sentiment_results)
-        # file_worker.upload_result(eng_headers, translated_headers, source_lang, subject, kst, sentiment_results)
-        # db_worker.save_result(sentiment_results)
-        print(round((time.time() - start), 2))
-        return("ok", 200)
-    except Exception:
-        error = traceback.format_exc()
-        error = pretty_trackback(error)
-        print(error)
-        return(error, 400)
+    chunks = make_chunk(translated_headers, headers_len, cpu_count)
 
+    for chunk_idx, chunk in enumerate(chunks):
+        pool_len = len(chunk)
+        with Pool(pool_len) as pool:
+            res = pool.map(sentiment_analysis_fin, chunk)
+            sentiment_results.extend(res)
+    print(sentiment_results)
+    return("ok", 200)
+    # save_result(subject, source_lang, origin_headers, translated_headers, kst, sentiment_results)
 
 if(__name__ == "__main__"):
-    crawl()
+    app.run(host="0.0.0.0", port=8080, debug=False)
+    

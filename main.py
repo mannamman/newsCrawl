@@ -1,33 +1,30 @@
-## moduels ##
 from modules.newsCrawler import HeaderCrawler
 from modules.mongo_db import DBworker
 from modules.file_worker import FileWorker
 from modules.req_valid import auth_deco
 from modules.log_module import Logger
-
-## sentiment sentiment analysis
 from finBERT.sentiment import FinBert
-
-# web server
-from flask import Flask, request
-
-# bulit in
-import json
-import functools
-import traceback
 import pytz
 import datetime
-
-
+import json
+import functools
+# log
+import traceback
+# multi process
+from math import ceil
+from multiprocessing import Pool
+import os
+# server
+from flask import request, Flask
 
 app = Flask(__name__)
 
-logger = Logger()
-
 # 객체 초기화(공통으로 사용되는)
-target_lang ="en"
 file_worker = FileWorker()
 sentiment_finbert = FinBert()
+logger = Logger()
+
+
 KST = pytz.timezone("Asia/Seoul")
 
 
@@ -53,47 +50,78 @@ def pretty_trackback(msg :str)->str:
     return msg
 
 
+def crawl(subject, source_lang):
+    # get urls
+    # contury code
+    header_crawler = HeaderCrawler(source_lang)
+    origin_headers, translated_headers = header_crawler.get_news_header(subject)
+    return origin_headers, translated_headers
 
-@app.route("/ping", methods=["GET"])
-@abstract_request
-@auth_deco
-def ping_pong(req):
-    return("pong", 200)
 
-
-@app.route("/crawl", methods=["POST"])
-@abstract_request
-@auth_deco
-def crawl(req):
-    global file_worker
+def sentiment_analysis_fin(*args):
     global sentiment_finbert
+
+    process_id, header = args[0]
+    res = sentiment_finbert.pred(header)
+    # print(f"process {process_id} : {res}")
+    return res
+
+
+def make_chunk(headers, headers_len, cpu_count):
+    return list(
+        map(
+            lambda x: headers[x*cpu_count:x*cpu_count+cpu_count],
+            [i for i in range(ceil(headers_len/cpu_count))]
+        )
+    )
+
+
+def save_result(subject, source_lang, origin_headers, translated_headers, kst, sentiment_results):
+    global file_worker
+
+    db_worker = DBworker(database=subject, collection=source_lang, kst=kst)
+
+    file_worker.upload_result(origin_headers, translated_headers, source_lang, subject, kst, sentiment_results)
+
+    db_worker.save_result(sentiment_results)
+
+
+@app.route("/sentiment", methods=["POST"])
+@abstract_request
+@auth_deco
+def index(req):
     global KST
-    global target_lang
     global logger
 
-    utc_now = datetime.datetime.utcnow()
-    kst = pytz.utc.localize(utc_now).astimezone(KST)
     try:
         # post 메시지 파싱
         recevied_msg = json.loads(req.get_data().decode("utf-8"))
         subject = recevied_msg["subject"]
         source_lang = recevied_msg["source_lang"]
 
-        header_crawler = HeaderCrawler(target_lang)
+        utc_now = datetime.datetime.utcnow()
+        kst = pytz.utc.localize(utc_now).astimezone(KST)
 
-        # db worker 객체 생성
-        db_worker = DBworker(database=subject, collection=source_lang, kst=kst)
+        origin_headers, translated_headers = crawl(subject, source_lang)
 
-        eng_headers, translated_headers = header_crawler.get_news_header(subject)
-
+        headers_len = len(origin_headers)
         sentiment_results = list()
-        for header in eng_headers:
-            res = sentiment_finbert.pred(header)
-            sentiment_results.append(res)
+        cpu_count = os.cpu_count()
 
-        file_worker.upload_result(eng_headers, translated_headers, source_lang, subject, kst, sentiment_results)
-        db_worker.save_result(sentiment_results)
+        if(translated_headers is None):
+            translated_headers = origin_headers
 
+        translated_headers = [(idx+1, header) for idx, header in enumerate(translated_headers)]
+
+        chunks = make_chunk(translated_headers, headers_len, cpu_count)
+
+        for chunk_idx, chunk in enumerate(chunks):
+            pool_len = len(chunk)
+            with Pool(pool_len) as pool:
+                res = pool.map(sentiment_analysis_fin, chunk)
+                sentiment_results.extend(res)
+
+        save_result(subject, source_lang, origin_headers, translated_headers, kst, sentiment_results)
         return("ok", 200)
     except Exception:
         error = traceback.format_exc()
@@ -104,3 +132,4 @@ def crawl(req):
 
 if(__name__ == "__main__"):
     app.run(host="0.0.0.0", port=8080, debug=False)
+    
