@@ -36,6 +36,7 @@ steps:
     entrypoint: gcloud
 images:
   - '$_GCR_HOSTNAME/$PROJECT_ID/$_SERVICE_NAME:$COMMIT_SHA'
+timeout: 1200s
 options:
   substitutionOption: ALLOW_LOOSE
 substitutions:
