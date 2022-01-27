@@ -1,6 +1,6 @@
 FROM python:3.8.12-slim-buster
 LABEL maintainer="wase894@gmail.com"
-ENV TRANSFORMERS_OFFLINE 1 
+ENV TRANSFORMERS_OFFLINE 1
 EXPOSE 8080
 WORKDIR /app
 COPY . /app

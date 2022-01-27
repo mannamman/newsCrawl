@@ -1,4 +1,4 @@
-# news-crawl-test 배포용 
+# news-crawl-test 배포용
 steps:
   - name: gcr.io/cloud-builders/docker
     args:
@@ -32,6 +32,7 @@ steps:
       - '--concurrency=1'
       - '--max-instances=1000'
       - '--timeout=360'
+      - '--port=8080'
     id: Deploy
     entrypoint: gcloud
 images:
@@ -49,3 +50,4 @@ tags:
   - gcp-cloud-build-deploy-cloud-run-managed
   - news-crawl-test
 # https://cloud.google.com/build/docs/configuring-builds/substitute-variable-values
+# https://cloud.google.com/build/docs/build-config
