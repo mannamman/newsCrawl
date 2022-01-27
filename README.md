@@ -1,10 +1,10 @@
 <h1 align="center">
-  newsCrawl
+  stock advise
 </h1>
 
 <p align="center">
   <strong>
-    단어 빈도 수 측정
+    뉴스 헤드라인 이용하여 주식 도움
   </strong>
 </p>
 <p align="center">
@@ -14,18 +14,14 @@
 </p>
 
 ## 💡 개요
-특정 주제에대한 뉴스에서 단어들의 빈도를 측정, 저장을 함
+특정 주제에 대한 뉴스의 헤드라인을 분석(sentiment analysis), 주식 도움
 
-- **여러개의 언어로 번역** <br>
-  함수를 호출시 target_lanuage에 따라서 원하는 언어로 번역 가능   
-  * target_lanuage의 경우에는 Google Translation api가 지원하는 언어까지 가능
 
-- **여러나라의 뉴스를 수집** <br>
-  source_language를 기반으로 특정 국가의 뉴스를 바탕으로 단어를 수집   
-  * source_language는 현재 eng, fr, jp, kr 존재하며 계속 추가할 예정
+- **여러나라의 뉴스를 수집(추가 예정)** <br>
+  source_language를 기반으로 특정 국가의 뉴스를 바탕으로 단어를 수집
+  * 현재는 en(usa)의 뉴스만 크롤링 중
+  
 
-- **단어 빈도 통계 및 시각화 지원(예정)**<br>
-  언어-주제별로 단어들의 빈도수를 통계 및 시각화
 
 ## 🏷️ 문서 목록
 
@@ -35,15 +31,19 @@
 
 ## 🧰 실행 환경
 
-모든 작업은 클라우드 상에서 실행이 되며,   
-크롤링, 통계는 구글 클라우드(GCP)에서 진행,   
+모든 작업은 클라우드 상에서 실행이 되며,
+작업예약(cron), 크롤링, 번역, 감정분석은 GCP상에서 실행,
 EC2에는 데이터베이스가 존재하며, 추후에 시각화를 해야하는 부분에서, 추가로 사용할 수도 있음.
 
 ### 1. **플랫폼**
-  * GCP<br>
-  Container 실행을 위한 cloudRun, 지속적인 배포를 위한 cloudBuild, 주기적인 실행을 위한 cloudScheduler을 사용
-  * AWS<br>
-  24/7 돌아가야하는 상황에 맞추어 VM을 생성(EC2)
+  - **GCP**<br>
+    - 빌드를 위한 cloud build
+    - Container 실행을 위한 cloudRun
+    - 지속적인 배포를 위한 cloudBuild
+    - 주기적인 실행을 위한 cloudScheduler
+  - **AWS**<br>
+    - 24/7 돌아가야하는 상황에 맞추어 VM을 생성(EC2)
+
 
 ### 2. **언어**
    * Python(3.8)
@@ -55,18 +55,20 @@ EC2에는 데이터베이스가 존재하며, 추후에 시각화를 해야하�
 ### 4. **번역**
   * Google Translation api
 
+### 5. **감정분석(sentiment analysis)**
+  * https://github.com/ProsusAI/finBERT
+
 ### 5. **빌드 및 배포**
   * github
   * GCP BUILD
 
 ## 📷 흐름도
-![flow1](https://user-images.githubusercontent.com/38392519/146722965-c8855634-95b7-4946-9963-fc9a21e45ba2.jpg)
 
+### **빌드 및 배포**
+![_crawl_build_deploy](https://user-images.githubusercontent.com/38392519/151313001-cae1425b-2801-4686-b857-1b74c2b826ac.jpg)
+
+### **내부 동작**
+* 추가 예정
 
 ## 📝 License
-
-## 개발 변경사항
-1. 단어들의 빈도에서 문장의 긍정, 부정의 정도를 측정으로 변환
-2. 뉴스 전체의 크롤링하는 것에서 뉴스의 제목만으로 긍정 부정 측정
-
 Licensed under the [MIT License](./LICENSE).

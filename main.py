@@ -56,7 +56,7 @@ def pretty_trackback(msg :str)->str:
     return msg
 
 
-def crawl(subject, source_lang):
+def crawl(subject :str, source_lang :str) -> list:
     # get urls
     # contury code
     header_crawler = HeaderCrawler(source_lang)
@@ -64,7 +64,7 @@ def crawl(subject, source_lang):
     return origin_headers, translated_headers
 
 
-def sentiment_analysis_fin(*args):
+def sentiment_analysis_fin(*args) -> dict:
     global sentiment_finbert
 
     process_id, header = args[0]
@@ -73,7 +73,7 @@ def sentiment_analysis_fin(*args):
     return res
 
 
-def make_chunk(headers, headers_len, cpu_count):
+def make_chunk(headers :list, headers_len :int, cpu_count :int) -> list:
     return list(
         map(
             lambda x: headers[x*cpu_count:x*cpu_count+cpu_count],
@@ -82,17 +82,26 @@ def make_chunk(headers, headers_len, cpu_count):
     )
 
 
-def save_result(subject, source_lang, origin_headers, translated_headers, kst, sentiment_results):
+def save_result(
+        subject :str, source_lang :str, origin_headers :list,
+        translated_headers :list, kst :datetime.datetime,
+        sentiment_results :list
+    ):
     global file_worker
 
     db_worker = DBworker(database=subject, collection=source_lang, kst=kst)
 
+    # 결과 및 원본을 스토리지에 저장
+    # 경로는 subject/source_lang/kst
     file_worker.upload_result(origin_headers, translated_headers, source_lang, subject, kst, sentiment_results)
 
+    # mongo에 결과 저장
     db_worker.save_result(sentiment_results)
 
 
-@app.route("/sentiment", methods=["POST"])
+
+
+@app.route("/sentiment", methods=["GET", "POST"])
 @abstract_request
 @auth_deco
 def index(req):
@@ -100,6 +109,11 @@ def index(req):
     global logger
     global sentiment_finbert
 
+    # 헬스 체크
+    if(req.method == "GET"):
+        return("pong", 200)
+
+    # lazy loading
     if(sentiment_finbert is None):
         init_sentiment()
 
@@ -112,18 +126,21 @@ def index(req):
         utc_now = datetime.datetime.utcnow()
         kst = pytz.utc.localize(utc_now).astimezone(KST)
 
+        # news header만 수집(source가 en이 아니라면 번역)
         origin_headers, translated_headers = crawl(subject, source_lang)
 
         headers_len = len(origin_headers)
         sentiment_results = list()
         cpu_count = os.cpu_count()
 
+        # source가 en이라면
         if(translated_headers is None):
             translated_headers = origin_headers
 
         translated_headers_copy = copy.copy(translated_headers)
         translated_headers_copy = [(idx+1, header) for idx, header in enumerate(translated_headers_copy)]
 
+        # cpu만큼의 프로세스를 동작시키기 위해
         chunks = make_chunk(translated_headers_copy, headers_len, cpu_count)
 
         for chunk_idx, chunk in enumerate(chunks):
@@ -134,6 +151,7 @@ def index(req):
 
         save_result(subject, source_lang, origin_headers, translated_headers, kst, sentiment_results)
         return("ok", 200)
+
     except Exception:
         error = traceback.format_exc()
         error = pretty_trackback(error)
