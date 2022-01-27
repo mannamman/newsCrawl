@@ -45,7 +45,7 @@ class FileWorker:
             translated_headers_blob_name = f"{blob_base_path}/translated_headers.txt"
             translated_headers_blob = self.bucket.blob(translated_headers_blob_name)
             translated_headers_blob.content_type = "text/plain"
-            translated_headers_blob.upload_from_file(io.StringIO("\n".join(translated_headers)))
+            translated_headers_blob.upload_from_string("\n".join(translated_headers))
 
         result_json_blob_name = f"{blob_base_path}/result.json"
         result_json_blob = self.bucket.blob(result_json_blob_name)

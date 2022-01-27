@@ -13,11 +13,7 @@ import time
 from math import ceil
 from multiprocessing import Pool
 import os
-
-# flask 모사
-from flask import request, Flask
-
-app = Flask(__name__)
+import copy
 
 # 객체 초기화(공통으로 사용되는)
 file_worker = FileWorker()
@@ -76,11 +72,8 @@ def save_result(subject, source_lang, origin_headers, translated_headers, kst, s
 
     db_worker.save_result(sentiment_results)
 
-
-@app.route("/test", methods=["GET"])
-def index():
-    global KST
-
+    
+if(__name__ == "__main__"):
     subject = "snp500"
     source_lang = "en"
 
@@ -96,9 +89,10 @@ def index():
     if(translated_headers is None):
         translated_headers = origin_headers
 
-    translated_headers = [(idx+1, header) for idx, header in enumerate(translated_headers)]
+    translated_headers_copy = copy.copy(translated_headers)
+    translated_headers_copy = [(idx+1, header) for idx, header in enumerate(translated_headers_copy)]
 
-    chunks = make_chunk(translated_headers, headers_len, cpu_count)
+    chunks = make_chunk(translated_headers_copy, headers_len, cpu_count)
 
     for chunk_idx, chunk in enumerate(chunks):
         pool_len = len(chunk)
@@ -106,9 +100,6 @@ def index():
             res = pool.map(sentiment_analysis_fin, chunk)
             sentiment_results.extend(res)
     print(sentiment_results)
-    return("ok", 200)
-    # save_result(subject, source_lang, origin_headers, translated_headers, kst, sentiment_results)
+    save_result(subject, source_lang, origin_headers, translated_headers, kst, sentiment_results)
 
-if(__name__ == "__main__"):
-    app.run(host="0.0.0.0", port=8080, debug=False)
     

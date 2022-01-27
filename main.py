@@ -7,13 +7,14 @@ from finBERT.sentiment import FinBert
 import pytz
 import datetime
 import json
-import functools
-# log
-import traceback
-# multi process
-from math import ceil
-from multiprocessing import Pool
+import functoolsfrom math import ceil
 import os
+import traceback
+import copy
+# multi process
+from multiprocessing import Pool
+
+
 # server
 from flask import request, Flask
 
@@ -111,9 +112,10 @@ def index(req):
         if(translated_headers is None):
             translated_headers = origin_headers
 
-        translated_headers = [(idx+1, header) for idx, header in enumerate(translated_headers)]
+        translated_headers_copy = copy.copy(translated_headers)
+        translated_headers_copy = [(idx+1, header) for idx, header in enumerate(translated_headers_copy)]
 
-        chunks = make_chunk(translated_headers, headers_len, cpu_count)
+        chunks = make_chunk(translated_headers_copy, headers_len, cpu_count)
 
         for chunk_idx, chunk in enumerate(chunks):
             pool_len = len(chunk)

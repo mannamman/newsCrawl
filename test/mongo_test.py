@@ -19,7 +19,7 @@ DB client	mongo
 # collections = "ko"
 
 class DBworker:
-    def __init__(self, database="tesla", collections="ko"):
+    def __init__(self, database="snp500", collections="en"):
         # global database
         # global collections
         dot_env_path = os.path.dirname(os.path.abspath(__file__))
