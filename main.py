@@ -7,7 +7,8 @@ from finBERT.sentiment import FinBert
 import pytz
 import datetime
 import json
-import functoolsfrom math import ceil
+import functools
+from math import ceil
 import os
 import traceback
 import copy
@@ -22,11 +23,15 @@ app = Flask(__name__)
 
 # 객체 초기화(공통으로 사용되는)
 file_worker = FileWorker()
-sentiment_finbert = FinBert()
+sentiment_finbert = None
 logger = Logger()
 
 
 KST = pytz.timezone("Asia/Seoul")
+
+def init_sentiment():
+    global sentiment_finbert
+    sentiment_finbert = FinBert()
 
 
 def abstract_request(func):
@@ -93,6 +98,10 @@ def save_result(subject, source_lang, origin_headers, translated_headers, kst, s
 def index(req):
     global KST
     global logger
+    global sentiment_finbert
+
+    if(sentiment_finbert is None):
+        init_sentiment()
 
     try:
         # post 메시지 파싱
