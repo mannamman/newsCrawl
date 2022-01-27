@@ -5,6 +5,7 @@ import six
 from google.cloud import translate_v3 as translate
 ## local 테스트 ##
 from google.oauth2 import service_account
+# from log_module import Logger
 import asyncio
 
 
@@ -15,7 +16,7 @@ import asyncio
 """
 
 # 상수
-location = "us-central1"
+location = "global"
 project_id = os.getenv("project_id")
 
 class Translater:
@@ -38,58 +39,62 @@ class Translater:
         return translate_client
 
         ## 배포시 사용 ##
-        translate_client = translate.TranslationServiceClient()
-        self.parent = f"projects/{project_id}/locations/{location}"
-        return translate_client
+        # translate_client = translate.TranslationServiceClient()
+        # self.parent = f"projects/{project_id}/locations/{location}"
+        # return translate_client
 
 
-    # def translate(self, context :str, source_lang :str, target_lang :str) -> list:
-    #     results = list()
-    #     # 불필요한 문자 제거
-    #     context = self.__context_strip(context)
-    #     # 문장 -> 단어들 변환
-    #     words = self.__word_preprocess(context)
-    #     # api 사용
-    #     res = self.translate_client.translate_text(
-    #         parent=self.parent,
-    #         contents=words,
-    #         mime_type="text/plain",
-    #         source_language_code=source_lang,
-    #         target_language_code=target_lang,
-    #         timeout = self.translate_timeout
-    #     )
-    #     results = [word.translated_text for word in res.translations]
-    #     return results
-
-
-    def batch_translate(self, source_lang :str, target_lang :str, input_uri :str, output_uri :str) -> list:
-        gcs_source = {"input_uri": input_uri}
-
-        input_configs_element = {
-            "gcs_source": gcs_source,
-            "mime_type": "text/plain",  # Can be "text/plain" or "text/html".
-        }
-        
-        gcs_destination = {"output_uri_prefix": output_uri}
-        output_config = {"gcs_destination": gcs_destination}
-        # Supported language codes: https://cloud.google.com/translate/docs/languages
-        operation = self.translate_client.batch_translate_text(
-            request={
-                "parent": self.parent,
-                "source_language_code": source_lang,
-                "target_language_codes": [target_lang],  # Up to 10 language codes here.
-                "input_configs": [input_configs_element],
-                "output_config": output_config,
-            }
+    def translate(self, headers :str, source_lang :str, target_lang :str="en") -> list:
+        results = list()
+        # api 사용
+        res = self.translate_client.translate_text(
+            parent=self.parent,
+            contents=headers,
+            mime_type="text/plain",
+            source_language_code=source_lang,
+            target_language_code=target_lang,
+            timeout = self.translate_timeout
         )
-        response = operation.result(self.translate_timeout)
+        results = [word.translated_text for word in res.translations]
+        return results
 
-        print("Total Characters: {}".format(response.total_characters))
-        print("Translated Characters: {}".format(response.translated_characters))
+
+    def get_supported_lang(self):
+        res = self.translate_client.get_supported_languages(parent=self.parent)
+        # List language codes of supported languages.
+        print("Supported Languages:")
+        for language in res.languages:
+            print("Language Code: {}".format(language.language_code))
+
+
+    # def batch_translate(self, source_lang :str, target_lang :str, input_uri :str, output_uri :str, subject :str) -> list:
+    #     gcs_source = {"input_uri": input_uri}
+
+    #     input_configs_element = {
+    #         "gcs_source": gcs_source,
+    #         "mime_type": "text/plain",  # Can be "text/plain" or "text/html".
+    #     }
+        
+    #     gcs_destination = {"output_uri_prefix": output_uri}
+    #     output_config = {"gcs_destination": gcs_destination}
+    #     # Supported language codes: https://cloud.google.com/translate/docs/languages
+    #     operation = self.translate_client.batch_translate_text(
+    #         request={
+    #             "parent": self.parent,
+    #             "source_language_code": source_lang,
+    #             "target_language_codes": [target_lang],  # Up to 10 language codes here.
+    #             "input_configs": [input_configs_element],
+    #             "output_config": output_config,
+    #         }
+    #     )
+    #     response = operation.result(self.translate_timeout)
+
+    #     total_char = response.total_characters
+    #     translated_char = response.translated_characters
+    #     log_msg = f"{subject=}, {source_lang=}, {target_lang=}, {total_char=}, {translated_char=}, {input_uri=}, {output_uri=}"
 
         
 if(__name__ == "__main__"):
     t = Translater()
-    input_uri = "gs://crawl-bucket/input/7af4c2e7-a04a-41fb-832c-66b9cbba4c69.txt/"
-    output_uri = "gs://crawl-bucket/output/7af4c2e7-a04a-41fb-832c-66b9cbba4c69.txt/"
-    t.batch_translate("en", "ko", input_uri, output_uri)
+    # print(t.translate(["hello", "world"], "en", "ko"))
+    print(t.get_supported_lang())

@@ -1,34 +1,31 @@
-from modules.newsCrawler import Crawler, UrlMaker
-from modules.translater import Translater
+from modules.newsCrawler import HeaderCrawler
 from modules.mongo_db import DBworker
-from threading import Thread
-from flask import Flask, request
+from modules.file_worker import FileWorker
+from modules.req_valid import auth_deco
+from modules.log_module import Logger
+from finBERT.sentiment import FinBert
+import pytz
+import datetime
 import json
 import functools
-from modules.req_valid import auth_deco
 # log
-from google.cloud import logging_v2
-from google.cloud.logging_v2 import Resource
 import traceback
-
+# multi process
+from math import ceil
+from multiprocessing import Pool
+import os
+# server
+from flask import request, Flask
 
 app = Flask(__name__)
-logging_client = logging_v2.Client()
-resource = Resource(type="cloud_function", labels={"function_name":"news-crawl", "region":"asia-northeast3"})
-logger = logging_v2.Logger(name="news-crawl",client=logging_client , resource=resource)
+
 # 객체 초기화(공통으로 사용되는)
-crawler = Crawler()
-translater = Translater()
-
-# 디버그 로그 작성
-def debug_log(msg :str):
-    global logger
-    logger.log_text(msg, severity="DEBUG")
+file_worker = FileWorker()
+sentiment_finbert = FinBert()
+logger = Logger()
 
 
-def error_log(msg :str):
-    global logger
-    logger.log_text(f"ERROR LOG : {msg}", severity="ERROR")
+KST = pytz.timezone("Asia/Seoul")
 
 
 def abstract_request(func):
@@ -53,71 +50,86 @@ def pretty_trackback(msg :str)->str:
     return msg
 
 
-def run(
-    url :str, crawler :Crawler, translater :Translater, idx :int,
-    context_results :list, source_lang :str, target_lang :str
-):
-    print(f"thread {idx} start")
-    context = crawler.crawl(url)
-    if(context == ""):
-        print(f"thread {idx} fail")
-        context_results[idx] = ""
-        return
-    result = translater.translate(context, source_lang, target_lang)
-    context_results[idx] = result
-    print(f"thread {idx} done")
+def crawl(subject, source_lang):
+    # get urls
+    # contury code
+    header_crawler = HeaderCrawler(source_lang)
+    origin_headers, translated_headers = header_crawler.get_news_header(subject)
+    return origin_headers, translated_headers
 
 
-@app.route("/ping", methods=["GET"])
+def sentiment_analysis_fin(*args):
+    global sentiment_finbert
+
+    process_id, header = args[0]
+    res = sentiment_finbert.pred(header)
+    # print(f"process {process_id} : {res}")
+    return res
+
+
+def make_chunk(headers, headers_len, cpu_count):
+    return list(
+        map(
+            lambda x: headers[x*cpu_count:x*cpu_count+cpu_count],
+            [i for i in range(ceil(headers_len/cpu_count))]
+        )
+    )
+
+
+def save_result(subject, source_lang, origin_headers, translated_headers, kst, sentiment_results):
+    global file_worker
+
+    db_worker = DBworker(database=subject, collection=source_lang, kst=kst)
+
+    file_worker.upload_result(origin_headers, translated_headers, source_lang, subject, kst, sentiment_results)
+
+    db_worker.save_result(sentiment_results)
+
+
+@app.route("/sentiment", methods=["POST"])
 @abstract_request
 @auth_deco
-def ping_pong(req):
-    return("pong", 200)
+def index(req):
+    global KST
+    global logger
 
-
-@app.route("/crawl", methods=["POST"])
-@abstract_request
-@auth_deco
-def crawl(req):
-    global crawler
-    global translater
     try:
         # post 메시지 파싱
         recevied_msg = json.loads(req.get_data().decode("utf-8"))
         subject = recevied_msg["subject"]
         source_lang = recevied_msg["source_lang"]
-        target_lang = recevied_msg["target_lang"]
 
-        # get urls
-        url_maker = UrlMaker(source_lang)
-        urls = url_maker.get_news_urls(subject)
+        utc_now = datetime.datetime.utcnow()
+        kst = pytz.utc.localize(utc_now).astimezone(KST)
 
-        # db worker 객체 생성
-        db_worker = DBworker(database=subject, collection=target_lang)
+        origin_headers, translated_headers = crawl(subject, source_lang)
 
-        # 쓰레드 실행
-        threads = list()
-        context_results = [0] * len(urls) # 결과 값을 받기위한 배열
+        headers_len = len(origin_headers)
+        sentiment_results = list()
+        cpu_count = os.cpu_count()
 
-        for idx, url in enumerate(urls):
-            thread = Thread(target=run, args=(url, crawler, translater, idx, context_results, source_lang, target_lang))
-            threads.append(thread)
-        for thread in threads:
-            thread.start()
+        if(translated_headers is None):
+            translated_headers = origin_headers
 
-        # 남은 쓰레드 대기
-        while True:
-            if(0 not in context_results):
-                break
-        db_worker.save_result(context_results)
+        translated_headers = [(idx+1, header) for idx, header in enumerate(translated_headers)]
+
+        chunks = make_chunk(translated_headers, headers_len, cpu_count)
+
+        for chunk_idx, chunk in enumerate(chunks):
+            pool_len = len(chunk)
+            with Pool(pool_len) as pool:
+                res = pool.map(sentiment_analysis_fin, chunk)
+                sentiment_results.extend(res)
+
+        save_result(subject, source_lang, origin_headers, translated_headers, kst, sentiment_results)
         return("ok", 200)
     except Exception:
         error = traceback.format_exc()
         error = pretty_trackback(error)
-        error_log(error)
-        db_worker.save_error(context_results)
+        logger.error_log(error)
         return(error, 400)
 
 
 if(__name__ == "__main__"):
     app.run(host="0.0.0.0", port=8080, debug=False)
+    

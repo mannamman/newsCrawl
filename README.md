@@ -8,7 +8,7 @@
   </strong>
 </p>
 <p align="center">
-  <a href="https://github.com/mannamman/newsCrawl/blob/main/LICENSE">
+  <a href="https://github.com/mannamman/newsCrawlWeb/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg"/>
   </a>
 </p>
@@ -64,5 +64,9 @@ EC2에는 데이터베이스가 존재하며, 추후에 시각화를 해야하�
 
 
 ## 📝 License
+
+## 개발 변경사항
+1. 단어들의 빈도에서 문장의 긍정, 부정의 정도를 측정으로 변환
+2. 뉴스 전체의 크롤링하는 것에서 뉴스의 제목만으로 긍정 부정 측정
 
 Licensed under the [MIT License](./LICENSE).
