@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import requests
 from bs4 import BeautifulSoup
-from testModules.translater import Translater
+from modules.translater import Translater
 import os
 import re
 import copy
