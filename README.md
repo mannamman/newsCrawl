@@ -67,13 +67,11 @@ EC2에는 데이터베이스가 존재하며, 추후에 시각화를 해야하�
 ![_crawl_build_deploy](https://user-images.githubusercontent.com/38392519/151313001-cae1425b-2801-4686-b857-1b74c2b826ac.jpg)
 
 ### **내부 동작**
-* 추가 예정
+<details>
+  <summary><b><u>내부 동작 자세히 보기</u></b></summary>
+  <img src=https://user-images.githubusercontent.com/38392519/151465562-94c0c83e-87e6-4678-9bf6-e30859f91a2f.jpg />
+</details>
 
-### **추가하고 싶은 기능**
-- 추가하고 싶은 기능
-  - 데이터 시각화
-  - 실제 주식가격, 지수 비교하는 api 개발
-  - 자동으로 주식매매 기능 추가
 
 ## 📝 License
 Licensed under the [MIT License](./LICENSE).
