@@ -37,20 +37,21 @@ def pretty_trackback(msg :str)->str:
     return msg
 
 
-def crawl(subject, source_lang):
+def crawl(subject :str, source_lang :str) -> tuple:
     # get urls
     # contury code
     header_crawler = HeaderCrawler(source_lang)
-    origin_headers, translated_headers = header_crawler.get_news_header(subject)
-    return origin_headers, translated_headers
+    origin_headers, translated_headers, news_links = header_crawler.get_news_header(subject)
+    return origin_headers, translated_headers, news_links
 
 
 def sentiment_analysis_fin(*args):
     global sentiment_finbert
 
-    process_id, header = args[0]
+    process_id, header, news_link = args[0]
     res = sentiment_finbert.pred(header)
     # print(f"process {process_id} : {res}")
+    res["url"] = news_link
     return res
 
 
@@ -72,7 +73,7 @@ def save_result(subject, source_lang, origin_headers, translated_headers, kst, s
 
     db_worker.save_result(sentiment_results)
 
-    
+
 if(__name__ == "__main__"):
     subject = "snp500"
     source_lang = "en"
@@ -80,7 +81,7 @@ if(__name__ == "__main__"):
     utc_now = datetime.datetime.utcnow()
     kst = pytz.utc.localize(utc_now).astimezone(KST)
 
-    origin_headers, translated_headers = crawl(subject, source_lang)
+    origin_headers, translated_headers, news_links = crawl(subject, source_lang)
 
     headers_len = len(origin_headers)
     sentiment_results = list()
@@ -90,8 +91,7 @@ if(__name__ == "__main__"):
         translated_headers = origin_headers
 
     translated_headers_copy = copy.copy(translated_headers)
-    translated_headers_copy = [(idx+1, header) for idx, header in enumerate(translated_headers_copy)]
-
+    translated_headers_copy = [(idx+1, header, news_link) for idx, (header, news_link) in enumerate(zip(translated_headers_copy, news_links))]
     chunks = make_chunk(translated_headers_copy, headers_len, cpu_count)
 
     for chunk_idx, chunk in enumerate(chunks):
@@ -99,7 +99,8 @@ if(__name__ == "__main__"):
         with Pool(pool_len) as pool:
             res = pool.map(sentiment_analysis_fin, chunk)
             sentiment_results.extend(res)
-    print(sentiment_results)
-    save_result(subject, source_lang, origin_headers, translated_headers, kst, sentiment_results)
+        break
+    # print(sentiment_results)
+    # save_result(subject, source_lang, origin_headers, translated_headers, kst, sentiment_results)
 
     

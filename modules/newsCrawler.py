@@ -65,20 +65,31 @@ class HeaderCrawler:
         return urls
 
 
+    def __make_news_link(self, url :str, href :str) -> str:
+        base_url = "/".join(url.split("/")[:3])
+        href = href[1:]
+        news_link = base_url + href
+        return news_link      
+
+
     def get_news_header(self, keyword :str) -> list:
         url = self.__make_search_new_url(keyword)
-        print(url)
         html_text = requests.get(url, timeout=self.crawl_timeout).text
         soup = BeautifulSoup(html_text, 'html.parser')
         news_cards_list = soup.find_all("h3", "ipQwMb ekueJc RD0gLb")
         news_headers = []
+        news_links = []
         for news_card in news_cards_list:
+            a_tag = news_card.find("a", href=True)
+            a_href = a_tag["href"]
+            news_link = self.__make_news_link(url, a_href)
+            news_links.append(news_link)
             news_headers.append(news_card.text)
         translated_header = None
         if(self.country != "en"):
             translated_header = copy.copy(news_headers)
             translated_header = self._to_eng(translated_header)
-        return news_headers ,translated_header
+        return news_headers ,translated_header, news_links
 
 
     def _to_eng(self, headers):
@@ -88,4 +99,4 @@ class HeaderCrawler:
 
 if(__name__ == "__main__"):
     news_header = HeaderCrawler("en")
-    print(news_header.get_news_header("tesla"))
+    news_header.get_news_header("tesla")

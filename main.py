@@ -56,20 +56,21 @@ def pretty_trackback(msg :str)->str:
     return msg
 
 
-def crawl(subject :str, source_lang :str) -> list:
+def crawl(subject :str, source_lang :str) -> tuple:
     # get urls
     # contury code
     header_crawler = HeaderCrawler(source_lang)
-    origin_headers, translated_headers = header_crawler.get_news_header(subject)
-    return origin_headers, translated_headers
+    origin_headers, translated_headers, news_links = header_crawler.get_news_header(subject)
+    return origin_headers, translated_headers, news_links
 
 
-def sentiment_analysis_fin(*args) -> dict:
+def sentiment_analysis_fin(*args):
     global sentiment_finbert
 
-    process_id, header = args[0]
+    process_id, header, news_link = args[0]
     res = sentiment_finbert.pred(header)
     # print(f"process {process_id} : {res}")
+    res["url"] = news_link
     return res
 
 
@@ -99,8 +100,6 @@ def save_result(
     db_worker.save_result(sentiment_results)
 
 
-
-
 @app.route("/sentiment", methods=["GET", "POST"])
 @abstract_request
 @auth_deco
@@ -127,7 +126,7 @@ def index(req):
         kst = pytz.utc.localize(utc_now).astimezone(KST)
 
         # news header만 수집(source가 en이 아니라면 번역)
-        origin_headers, translated_headers = crawl(subject, source_lang)
+        origin_headers, translated_headers, news_links = crawl(subject, source_lang)
 
         headers_len = len(origin_headers)
         sentiment_results = list()
@@ -138,7 +137,7 @@ def index(req):
             translated_headers = origin_headers
 
         translated_headers_copy = copy.copy(translated_headers)
-        translated_headers_copy = [(idx+1, header) for idx, header in enumerate(translated_headers_copy)]
+        translated_headers_copy = [(idx+1, header, news_link) for idx, (header, news_link) in enumerate(zip(translated_headers_copy, news_links))]
 
         # cpu만큼의 프로세스를 동작시키기 위해
         chunks = make_chunk(translated_headers_copy, headers_len, cpu_count)
