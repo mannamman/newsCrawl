@@ -39,7 +39,7 @@ class newWorker(BaseWorker):
 
     def insert_regacy(self, results, subject):
         for result in results:
-            result["subejct"] = subject
+            result["subject"] = subject
             self.collection.insert_one(result)
 
 class regacyWorker(BaseWorker):
