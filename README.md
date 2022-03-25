@@ -13,6 +13,8 @@
   </a>
 </p>
 
+## 👋 [사이트 바로가기](https://www.namthplayground.com/)
+
 ## 💡 개요
 특정 주제에 대한 뉴스의 헤드라인을 분석(sentiment analysis) 후 데이터 수집
 
