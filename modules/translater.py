@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+from typing import List, Dict, Tuple
 # from google.cloud import translate
 from google.cloud import translate_v3 as translate
 
@@ -16,7 +17,7 @@ location = "global"
 project_id = os.getenv("project_id")
 
 class Translater:
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Translater 클래스는 크롤링한 데이터를 받아 번역을 해주는 클래스
         """
@@ -26,14 +27,6 @@ class Translater:
     def __init_client(self):
         global location
         global project_id
-        ## local 테스트 ##
-        # from google.oauth2 import service_account
-        # cred_dir_path = os.path.dirname(os.path.abspath(__file__))
-        # cred_path = f"{cred_dir_path}/../cred/local_translate.json"
-        # credentials = service_account.Credentials.from_service_account_file(cred_path)
-        # translate_client = translate.TranslationServiceClient(credentials=credentials)
-        # self.parent = f"projects/{credentials.project_id}/locations/{location}"
-        # return translate_client
 
         ## 배포시 사용 ##
         translate_client = translate.TranslationServiceClient()
@@ -41,7 +34,7 @@ class Translater:
         return translate_client
 
 
-    def translate(self, headers :str, source_lang :str, target_lang :str="en") -> list:
+    def translate(self, headers: str, source_lang: str, target_lang: str="en") -> List[str]:
         results = list()
         # api 사용
         res = self.translate_client.translate_text(
@@ -56,7 +49,7 @@ class Translater:
         return results
 
 
-    def get_supported_lang(self):
+    def get_supported_lang(self) -> None:
         res = self.translate_client.get_supported_languages(parent=self.parent)
         # List language codes of supported languages.
         print("Supported Languages:")
@@ -64,34 +57,39 @@ class Translater:
             print("Language Code: {}".format(language.language_code))
 
 
-    # def batch_translate(self, source_lang :str, target_lang :str, input_uri :str, output_uri :str, subject :str) -> list:
-    #     gcs_source = {"input_uri": input_uri}
+    def batch_translate(
+            self,
+            source_lang :str,
+            target_lang :str,
+            input_uri :str,
+            output_uri :str,
+            subject :str
+        ) -> None:
+        gcs_source = {"input_uri": input_uri}
 
-    #     input_configs_element = {
-    #         "gcs_source": gcs_source,
-    #         "mime_type": "text/plain",  # Can be "text/plain" or "text/html".
-    #     }
+        input_configs_element = {
+            "gcs_source": gcs_source,
+            "mime_type": "text/plain",  # Can be "text/plain" or "text/html".
+        }
         
-    #     gcs_destination = {"output_uri_prefix": output_uri}
-    #     output_config = {"gcs_destination": gcs_destination}
-    #     # Supported language codes: https://cloud.google.com/translate/docs/languages
-    #     operation = self.translate_client.batch_translate_text(
-    #         request={
-    #             "parent": self.parent,
-    #             "source_language_code": source_lang,
-    #             "target_language_codes": [target_lang],  # Up to 10 language codes here.
-    #             "input_configs": [input_configs_element],
-    #             "output_config": output_config,
-    #         }
-    #     )
-    #     response = operation.result(self.translate_timeout)
+        gcs_destination = {"output_uri_prefix": output_uri}
+        output_config = {"gcs_destination": gcs_destination}
+        # Supported language codes: https://cloud.google.com/translate/docs/languages
+        operation = self.translate_client.batch_translate_text(
+            request={
+                "parent": self.parent,
+                "source_language_code": source_lang,
+                "target_language_codes": [target_lang],  # Up to 10 language codes here.
+                "input_configs": [input_configs_element],
+                "output_config": output_config,
+            }
+        )
+        response = operation.result(self.translate_timeout)
 
-    #     total_char = response.total_characters
-    #     translated_char = response.translated_characters
-    #     log_msg = f"{subject=}, {source_lang=}, {target_lang=}, {total_char=}, {translated_char=}, {input_uri=}, {output_uri=}"
+        total_char = response.total_characters
+        translated_char = response.translated_characters
+        log_msg = f"{subject=}, {source_lang=}, {target_lang=}, {total_char=}, {translated_char=}, {input_uri=}, {output_uri=}"
 
         
 if(__name__ == "__main__"):
     t = Translater()
-    # print(t.translate(["hello", "world"], "en", "ko"))
-    print(t.get_supported_lang())

@@ -5,7 +5,7 @@ from modules.translater import Translater
 import os
 import re
 import copy
-
+from typing import List, Tuple
 """
 현재까지 알아낸 국가코드 (google)
 
@@ -33,7 +33,7 @@ class HeaderCrawler:
     """
     언어에 맞는 뉴스의 url을 반환하는 클래스
     """
-    def __init__(self, country :str):
+    def __init__(self, country: str) -> None:
         """
         입력받은 키워드를 바탕으로 구글에서 뉴스내용을 크롤링하는 클래스
         country : 특정 국가에서 검색한 내용을 얻기위한 국가 코드
@@ -43,36 +43,19 @@ class HeaderCrawler:
         self.crawl_timeout = 5
 
 
-    def __make_search_new_url(self, keyword :str):
+    def __make_search_new_url(self, keyword: str) -> str:
         # return f"{self.base_url}/search?q={keyword}&hl={self.country}&tbm=nws&lr=lang_{self.country}"
         return f"{self.base_url}/search?q={keyword}&hl={self.country}&gl=en"
 
 
-    def __check_cache(self, urls):
-        if(os.path.exists("cache")):
-            with open("cache", "r") as f:
-                cache_list = f.read()
-            with open("cache", "w") as f:
-                f.write("\n".join(urls))
-            cache_list = cache_list.split("\n")
-            for cache_url in cache_list:
-                if(cache_url in urls):
-                    print("cache!", cache_url)
-                    urls.remove(cache_url)
-        else:
-            with open("cache", "w") as f:
-                f.write("\n".join(urls))
-        return urls
-
-
-    def __make_news_link(self, url :str, href :str) -> str:
+    def __make_news_link(self, url: str, href: str) -> str:
         base_url = "/".join(url.split("/")[:3])
         href = href[1:]
         news_link = base_url + href
         return news_link      
 
 
-    def get_news_header(self, keyword :str) -> list:
+    def get_news_header(self, keyword: str) -> Tuple[List[str], List[str], List[str]]:
         url = self.__make_search_new_url(keyword)
         html_text = requests.get(url, timeout=self.crawl_timeout).text
         soup = BeautifulSoup(html_text, 'html.parser')
@@ -92,7 +75,7 @@ class HeaderCrawler:
         return news_headers ,translated_header, news_links
 
 
-    def _to_eng(self, headers):
+    def _to_eng(self, headers: List[str]) -> List[str]:
         global translater
         en_headers = translater.translate(headers, self.country, "en")
         return en_headers

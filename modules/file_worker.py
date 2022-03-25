@@ -4,35 +4,24 @@ import tempfile
 import datetime
 import io
 import json
+from typing import List, Dict
 
 class FileWorker:
-    def __init__(self):
+    def __init__(self) -> None:
         self.bucket_name = "crawl-bucket"
         self.cred = self._load_client()
         self.tempdir = tempfile.gettempdir()
 
-
     # 인증정보 로딩
-    def _load_client(self):
-        ## local ##
-        # from google.oauth2 import service_account
-        # key_dir_path = os.path.dirname(os.path.abspath(__file__))
-        # key_path = f"{key_dir_path}/../cred/local_translate.json"
-        # credentials = service_account.Credentials.from_service_account_file(
-        #     key_path, scopes=["https://www.googleapis.com/auth/devstorage.read_write"],
-        # )
-        # self.storage_client = storage.Client(credentials=credentials, project=credentials.project_id)
-        # self.bucket = self.storage_client.get_bucket(self.bucket_name)
-
+    def _load_client(self) -> None:
         ## gcp cloud ##
         self.storage_client = storage.Client()
         self.bucket = self.storage_client.get_bucket(self.bucket_name)
 
-
     def upload_result(
-        self, en_headers :list, translated_headers :list, source_lang :str,
-        subject :str, kst :datetime.datetime, result_dic :dict
-        ):
+        self, en_headers: List[str], translated_headers: List[str], source_lang: str,
+        subject: str, kst: datetime.datetime, result_dic: Dict[str,any]
+        ) -> None:
         kst_str = kst.strftime("%Y-%m-%d_%H:%M:00")
         blob_base_path = f"{subject}/{source_lang}/{kst_str}"
 
