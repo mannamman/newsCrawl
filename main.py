@@ -12,6 +12,7 @@ from math import ceil
 import os
 import traceback
 import copy
+from typing import Tuple, List, Dict
 # multi process
 from multiprocessing import Pool
 
@@ -22,6 +23,7 @@ from flask import request, Flask
 app = Flask(__name__)
 
 # 객체 초기화(공통으로 사용되는)
+db_worker = DBworker()
 file_worker = FileWorker()
 sentiment_finbert = None
 logger = Logger()
@@ -41,7 +43,7 @@ def abstract_request(func):
     return wrapper
 
 
-def pretty_trackback(msg :str)->str:
+def pretty_trackback(msg: str) -> str:
     """
     에러 발생시 문구를 보기 편하게 변환하는 함수
     파라미터
@@ -56,7 +58,7 @@ def pretty_trackback(msg :str)->str:
     return msg
 
 
-def crawl(subject :str, source_lang :str) -> tuple:
+def crawl(subject :str, source_lang :str) -> Tuple[List[str], List[str], List[str]]:
     # get urls
     # contury code
     header_crawler = HeaderCrawler(source_lang)
@@ -64,7 +66,7 @@ def crawl(subject :str, source_lang :str) -> tuple:
     return origin_headers, translated_headers, news_links
 
 
-def sentiment_analysis_fin(*args):
+def sentiment_analysis_fin(*args) -> Dict[str,any]:
     global sentiment_finbert
 
     process_id, header, news_link = args[0]
@@ -74,7 +76,7 @@ def sentiment_analysis_fin(*args):
     return res
 
 
-def make_chunk(headers :list, headers_len :int, cpu_count :int) -> list:
+def make_chunk(headers :list, headers_len :int, cpu_count :int) -> List[List[str]]:
     return list(
         map(
             lambda x: headers[x*cpu_count:x*cpu_count+cpu_count],
@@ -89,15 +91,14 @@ def save_result(
         sentiment_results :list
     ):
     global file_worker
-
-    db_worker = DBworker(database=subject, collection=source_lang, kst=kst)
+    global db_worker
 
     # 결과 및 원본을 스토리지에 저장
     # 경로는 subject/source_lang/kst
     file_worker.upload_result(origin_headers, translated_headers, source_lang, subject, kst, sentiment_results)
 
     # mongo에 결과 저장
-    db_worker.save_result(sentiment_results)
+    db_worker.save_result(sentiment_results, subject, kst)
 
 
 @app.route("/sentiment", methods=["GET", "POST"])
