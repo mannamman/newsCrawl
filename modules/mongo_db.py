@@ -42,7 +42,7 @@ class DBworker:
 
         doc_format = {
             "uuid" : uuid4(),
-            "subejct" : subject,
+            "subject" : subject,
             "createdAt" : rounded_kst,
             "sentiment" : sentiment_results
         }
