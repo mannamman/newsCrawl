@@ -13,6 +13,8 @@ import os
 import traceback
 import copy
 from typing import Tuple, List, Dict
+from uuid import uuid4
+from flask import Request, Response
 # multi process
 from multiprocessing import Pool
 
@@ -104,7 +106,7 @@ def save_result(
 @app.route("/sentiment", methods=["GET", "POST"])
 @abstract_request
 @auth_deco
-def index(req):
+def index(req: Request):
     global KST
     global logger
     global sentiment_finbert
@@ -125,6 +127,9 @@ def index(req):
 
         utc_now = datetime.datetime.utcnow()
         kst = pytz.utc.localize(utc_now).astimezone(KST)
+
+        cur_job_uuid = uuid4()
+        logger.debug_log(f"<{str(cur_job_uuid)}> start {subject} at {kst}")
 
         # news header만 수집(source가 en이 아니라면 번역)
         origin_headers, translated_headers, news_links = crawl(subject, source_lang)
@@ -150,13 +155,14 @@ def index(req):
                 sentiment_results.extend(res)
 
         save_result(subject, source_lang, origin_headers, translated_headers, kst, sentiment_results)
-        return("ok", 200)
+        logger.debug_log(f"<{str(cur_job_uuid)}> done {subject} at {kst}")
+        return Response(response="ok", status=200)
 
     except Exception:
         error = traceback.format_exc()
         error = pretty_trackback(error)
         logger.error_log(error)
-        return(error, 400)
+        return Response(response=error, status=400)
 
 
 if(__name__ == "__main__"):
