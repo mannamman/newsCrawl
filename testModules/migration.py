@@ -42,6 +42,10 @@ class newWorker(BaseWorker):
             result["subject"] = subject
             self.collection.insert_one(result)
 
+    def migration_for_mistyping(self):
+        self.collection.update_many({ "subejct": { "$exists": True } }, { "$rename": { 'subejct': 'subject'} })
+
+
 class regacyWorker(BaseWorker):
     def __init__(self, dbname: str, collection: str):
         super().__init__()
@@ -58,9 +62,5 @@ class regacyWorker(BaseWorker):
         return filterd_res
 
 if(__name__ == "__main__"):
-    subjects = ["tesla", "snp500", "google", "nasdaq", "americanelectricpower", "oneok", "amazon", "apple"]
     new_db_worker = newWorker()
-    for subject in subjects:
-        regacy_db_worker = regacyWorker(subject, "en")
-        cur_res = regacy_db_worker.get_all_data(subject)
-        new_db_worker.insert_regacy(cur_res, subject)
+    new_db_worker.migration_for_mistyping()
