@@ -1,13 +1,9 @@
 from modules.newsCrawler import HeaderCrawler
 from modules.mongo_db import DBworker
-from modules.file_worker import FileWorker
-from modules.req_valid import auth_deco
-from modules.log_module import Logger
 from finBERT.sentiment import FinBert
 import pytz
 import datetime
 import json
-import functools
 from math import ceil
 import os
 import traceback
@@ -26,9 +22,7 @@ app = Flask(__name__)
 
 # 객체 초기화(공통으로 사용되는)
 db_worker = DBworker()
-file_worker = FileWorker()
 sentiment_finbert = None
-logger = Logger()
 
 
 KST = pytz.timezone("Asia/Seoul")
@@ -36,13 +30,6 @@ KST = pytz.timezone("Asia/Seoul")
 def init_sentiment():
     global sentiment_finbert
     sentiment_finbert = FinBert()
-
-
-def abstract_request(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        return func(request)
-    return wrapper
 
 
 def pretty_trackback(msg: str) -> str:
@@ -92,23 +79,19 @@ def save_result(
         translated_headers :list, kst :datetime.datetime,
         sentiment_results :list
     ):
-    global file_worker
     global db_worker
 
     # 결과 및 원본을 스토리지에 저장
     # 경로는 subject/source_lang/kst
-    file_worker.upload_result(origin_headers, translated_headers, source_lang, subject, kst, sentiment_results)
+    # file_worker.upload_result(origin_headers, translated_headers, source_lang, subject, kst, sentiment_results)
 
     # mongo에 결과 저장
     db_worker.save_result(sentiment_results, subject, kst)
 
 
 @app.route("/sentiment", methods=["GET", "POST"])
-@abstract_request
-@auth_deco
 def index(req: Request):
     global KST
-    global logger
     global sentiment_finbert
 
     # 헬스 체크
@@ -129,7 +112,7 @@ def index(req: Request):
         kst = pytz.utc.localize(utc_now).astimezone(KST)
 
         cur_job_uuid = uuid4()
-        logger.debug_log(f"<{str(cur_job_uuid)}> start {subject} at {kst}")
+        print(f"<{str(cur_job_uuid)}> start {subject} at {kst}")
 
         # news header만 수집(source가 en이 아니라면 번역)
         origin_headers, translated_headers, news_links = crawl(subject, source_lang)
@@ -155,13 +138,13 @@ def index(req: Request):
                 sentiment_results.extend(res)
 
         save_result(subject, source_lang, origin_headers, translated_headers, kst, sentiment_results)
-        logger.debug_log(f"<{str(cur_job_uuid)}> done {subject} at {kst}")
+        print(f"<{str(cur_job_uuid)}> done {subject} at {kst}")
         return Response(response="ok", status=200)
 
     except Exception:
         error = traceback.format_exc()
         error = pretty_trackback(error)
-        logger.error_log(error)
+        print(error)
         return Response(response=error, status=400)
 
 

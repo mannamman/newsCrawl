@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
 import requests
 from bs4 import BeautifulSoup
-from modules.translater import Translater
-import os
-import re
-import copy
 from typing import List, Tuple
 """
 현재까지 알아낸 국가코드 (google)
@@ -26,7 +22,6 @@ h3 = ipQwMb ekueJc RD0gLb
 
 # https://dojang.io/mod/page/view.php?id=2469 async 참고 자료
 
-translater = Translater()
 
 
 class HeaderCrawler:
@@ -69,16 +64,16 @@ class HeaderCrawler:
             news_links.append(news_link)
             news_headers.append(news_card.text)
         translated_header = None
-        if(self.country != "en"):
-            translated_header = copy.copy(news_headers)
-            translated_header = self._to_eng(translated_header)
+        # if(self.country != "en"):
+        #     translated_header = copy.copy(news_headers)
+        #     translated_header = self._to_eng(translated_header)
         return news_headers ,translated_header, news_links
 
 
-    def _to_eng(self, headers: List[str]) -> List[str]:
-        global translater
-        en_headers = translater.translate(headers, self.country, "en")
-        return en_headers
+    # def _to_eng(self, headers: List[str]) -> List[str]:
+    #     global translater
+    #     en_headers = translater.translate(headers, self.country, "en")
+    #     return en_headers
 
 if(__name__ == "__main__"):
     news_header = HeaderCrawler("en")

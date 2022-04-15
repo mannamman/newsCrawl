@@ -18,6 +18,9 @@ DB client	mongo
 
 class DBworker:
     def __init__(self):
+        """
+        vpc
+        """
         ip = os.getenv("ip")
         port = os.getenv("port")
         user = os.getenv("user")
