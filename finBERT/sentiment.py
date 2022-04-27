@@ -2,9 +2,7 @@ from finBERT.finbert.finbert import predict
 from transformers import AutoModelForSequenceClassification
 import os
 import json
-
-
-
+from typing import Dict
 
 class FinBert:
     def __init__(self):
@@ -21,7 +19,8 @@ class FinBert:
             return_dic[label] = val
         return return_dic
 
-    def pred(self, text):
+    def pred(self, text: str) -> Dict[str,any]:
+        text = text.replace('"', "'")
         res = json.loads(predict(text, self.model, self.path).to_json(orient='records'))[0]
         return self._make_dic(text, res["logit"])
 
