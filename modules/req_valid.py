@@ -40,6 +40,6 @@ def auth_deco(func):
             if(req_api_key != env_api_key):
                 raise ValueError
         except ValueError:
-            return Response(status=401, response="Authorization is not correct format", headers=headers)
+            return Response(status=401, response=f"Authorization is not correct format {req_api_key}", headers=headers)
         return func(req)
     return valid
