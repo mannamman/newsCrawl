@@ -33,7 +33,6 @@ steps:
       - '--max-instances=10'
       - '--timeout=360'
       - '--port=8080'
-      - '--allow-unauthenticated'
     id: Deploy
     entrypoint: gcloud
 images:
