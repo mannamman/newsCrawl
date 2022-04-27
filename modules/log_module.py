@@ -5,7 +5,7 @@ from google.cloud.logging_v2 import Resource
 class Logger:
     def __init__(self) -> None:
         logging_client = logging_v2.Client()
-        resource = Resource(type="cloud_function", labels={"function_name":"news-crawl", "region":"asia-northeast3"})
+        resource = Resource(type="cloud_function", labels={"function_name":"sentiment-aiso-api", "region":"asia-northeast3"})
         self.logger = logging_v2.Logger(name="news-crawl",client=logging_client , resource=resource)
 
 

@@ -1,4 +1,0 @@
-gcp cloud run과 연계해서 트리거 작성시
-빌드 에러가 발생
-특정 부분을 서비스이름(cloudrun)으로 대체시 잘 작동
-https://uju-tech.tistory.com/entry/Cloud-build%EC%8B%9C-ERROR-%EB%8B%A4%EC%9D%8C-%EB%B9%8C%EB%93%9C%EB%A5%BC-%EC%8B%A4%ED%96%89%ED%95%A0-%EC%88%98-%EC%97%86%EC%8A%B5%EB%8B%88%EB%8B%A4-genericinvalidargument-invalid-build-invalid-image-name-could-not-parse-reference-%EC%97%90%EB%9F%AC-%ED%95%B4%EA%B2%B0

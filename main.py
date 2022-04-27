@@ -1,118 +1,27 @@
-from modules.newsCrawler import HeaderCrawler
-from modules.mongo_db import DBworker
-from modules.file_worker import FileWorker
 from modules.req_valid import auth_deco
 from modules.log_module import Logger
 from finBERT.sentiment import FinBert
-import pytz
-import datetime
 import json
-import functools
-from math import ceil
-import os
 import traceback
-import copy
-from typing import Tuple, List, Dict
-from uuid import uuid4
 from flask import Request, Response
-# multi process
-from multiprocessing import Pool
-
-
-# server
-from flask import request, Flask
-
-app = Flask(__name__)
+import requests
 
 # 객체 초기화(공통으로 사용되는)
-db_worker = DBworker()
-file_worker = FileWorker()
 sentiment_finbert = None
 logger = Logger()
 
-
-KST = pytz.timezone("Asia/Seoul")
 
 def init_sentiment():
     global sentiment_finbert
     sentiment_finbert = FinBert()
 
-
-def abstract_request(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        return func(request)
-    return wrapper
-
-
-def pretty_trackback(msg: str) -> str:
-    """
-    에러 발생시 문구를 보기 편하게 변환하는 함수
-    파라미터
-        msg : traceback 모듈을 이용해 전달받은 에러 메시지
-    반환 값
-        변환된 에러 메시지
-    """
-    msg = msg.split("\n")
-    msg = msg[1:-1]
-    msg = [i.strip() for i in msg]
-    msg = " ".join(msg)
-    return msg
-
-
-def crawl(subject :str, source_lang :str) -> Tuple[List[str], List[str], List[str]]:
-    # get urls
-    # contury code
-    header_crawler = HeaderCrawler(source_lang)
-    origin_headers, translated_headers, news_links = header_crawler.get_news_header(subject)
-    return origin_headers, translated_headers, news_links
-
-
-def sentiment_analysis_fin(*args) -> Dict[str,any]:
-    global sentiment_finbert
-
-    process_id, header, news_link = args[0]
-    res = sentiment_finbert.pred(header)
-    # print(f"process {process_id} : {res}")
-    res["url"] = news_link
-    return res
-
-
-def make_chunk(headers :list, headers_len :int, cpu_count :int) -> List[List[str]]:
-    return list(
-        map(
-            lambda x: headers[x*cpu_count:x*cpu_count+cpu_count],
-            [i for i in range(ceil(headers_len/cpu_count))]
-        )
-    )
-
-
-def save_result(
-        subject :str, source_lang :str, origin_headers :list,
-        translated_headers :list, kst :datetime.datetime,
-        sentiment_results :list
-    ):
-    global file_worker
-    global db_worker
-
-    # 결과 및 원본을 스토리지에 저장
-    # 경로는 subject/source_lang/kst
-    file_worker.upload_result(origin_headers, translated_headers, source_lang, subject, kst, sentiment_results)
-
-    # mongo에 결과 저장
-    db_worker.save_result(sentiment_results, subject, kst)
-
-
-@app.route("/sentiment", methods=["GET", "POST"])
-@abstract_request
 @auth_deco
-def index(req: Request):
-    global KST
+def index(request: Request):
     global logger
     global sentiment_finbert
 
     # 헬스 체크
-    if(req.method == "GET"):
+    if(request.method == "GET"):
         return("pong", 200)
 
     # lazy loading
@@ -121,50 +30,24 @@ def index(req: Request):
 
     try:
         # post 메시지 파싱
-        recevied_msg = json.loads(req.get_data().decode("utf-8"))
-        subject = recevied_msg["subject"]
-        source_lang = recevied_msg["source_lang"]
+        recevied_msg = json.loads(request.get_data().decode("utf-8"))
+        input_url = recevied_msg["input_url"][0]
+        header = recevied_msg["header"][0]
+        upload_url = recevied_msg["upload_url"][0]
 
-        utc_now = datetime.datetime.utcnow()
-        kst = pytz.utc.localize(utc_now).astimezone(KST)
+        res = requests.get(input_url)
+        context = res.content.decode("utf-8")
+        if(res.status_code != 200):
+            return Response(response=context, status=res.status_code)
+        
+        result = json.dumps(sentiment_finbert.pred(context)).encode("utf-8")
 
-        cur_job_uuid = uuid4()
-        logger.debug_log(f"<{str(cur_job_uuid)}> start {subject} at {kst}")
-
-        # news header만 수집(source가 en이 아니라면 번역)
-        origin_headers, translated_headers, news_links = crawl(subject, source_lang)
-
-        headers_len = len(origin_headers)
-        sentiment_results = list()
-        cpu_count = os.cpu_count()
-
-        # source가 en이라면
-        if(translated_headers is None):
-            translated_headers = origin_headers
-
-        translated_headers_copy = copy.copy(translated_headers)
-        translated_headers_copy = [(idx+1, header, news_link) for idx, (header, news_link) in enumerate(zip(translated_headers_copy, news_links))]
-
-        # cpu만큼의 프로세스를 동작시키기 위해
-        chunks = make_chunk(translated_headers_copy, headers_len, cpu_count)
-
-        for chunk_idx, chunk in enumerate(chunks):
-            pool_len = len(chunk)
-            with Pool(pool_len) as pool:
-                res = pool.map(sentiment_analysis_fin, chunk)
-                sentiment_results.extend(res)
-
-        save_result(subject, source_lang, origin_headers, translated_headers, kst, sentiment_results)
-        logger.debug_log(f"<{str(cur_job_uuid)}> done {subject} at {kst}")
-        return Response(response="ok", status=200)
+        res = requests.put(upload_url, data=result, headers=header)
+        
+        return Response(response=res.content.decode("utf-8"), status=res.status_code)
 
     except Exception:
         error = traceback.format_exc()
-        error = pretty_trackback(error)
         logger.error_log(error)
         return Response(response=error, status=400)
-
-
-if(__name__ == "__main__"):
-    app.run(host="0.0.0.0", port=8080, debug=False)
     
