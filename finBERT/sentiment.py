@@ -20,7 +20,7 @@ class FinBert:
         return return_dic
 
     def pred(self, text: str) -> Dict[str,any]:
-        text = text.replace('"', "'")
+        text = text.replace('"', "'").replace("\n", " ")
         res = json.loads(predict(text, self.model, self.path).to_json(orient='records'))[0]
         return self._make_dic(text, res["logit"])
 
