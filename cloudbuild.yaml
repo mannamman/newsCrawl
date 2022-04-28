@@ -35,8 +35,6 @@ steps:
       - '--port=8080'
     id: Deploy
     entrypoint: gcloud
-options:
-  machineType: 'E2_HIGHCPU_8'
 images:
   - '$_GCR_HOSTNAME/$PROJECT_ID/$_SERVICE_NAME:$COMMIT_SHA'
 timeout: 1200s
