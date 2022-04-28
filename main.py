@@ -1,4 +1,4 @@
-from modules.req_valid import auth_deco
+from modules.req_valid import auth_deco, health_cors
 from modules.log_module import Logger
 from finBERT.sentiment import FinBert
 import json
@@ -15,14 +15,11 @@ def init_sentiment():
     global sentiment_finbert
     sentiment_finbert = FinBert()
 
+@health_cors
 @auth_deco
 def index(request: Request):
     global logger
     global sentiment_finbert
-
-    # 헬스 체크
-    if(request.method == "GET"):
-        return("pong", 200)
 
     # lazy loading
     if(sentiment_finbert is None):
