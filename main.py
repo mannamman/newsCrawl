@@ -37,13 +37,13 @@ def index(request: Request):
         if(res.status_code != 200):
             return Response(response=context, status=res.status_code)
 
-        sentenses = context.split("\n") 
-        sentenses = [sentense.strip() for sentense in sentenses]
+        sentences = context.split("\n") 
+        sentences = [sentence.strip() for sentence in sentences if sentence != '']
 
         results = list()
 
-        for sentense in sentenses:
-            results.append(sentiment_finbert.pred(sentense))
+        for sentence in sentences:
+            results.append(sentiment_finbert.pred(sentence))
 
         res = requests.put(upload_url, data=json.dumps(results).encode("utf-8"), headers=header)
         
