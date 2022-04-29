@@ -36,10 +36,16 @@ def index(request: Request):
         context = res.content.decode("utf-8")
         if(res.status_code != 200):
             return Response(response=context, status=res.status_code)
-        
-        result = json.dumps(sentiment_finbert.pred(context)).encode("utf-8")
 
-        res = requests.put(upload_url, data=result, headers=header)
+        sentenses = context.split("\n") 
+        sentenses = [sentense.strip() for sentense in sentenses]
+
+        results = list()
+
+        for sentense in sentenses:
+            results.append(sentiment_finbert.pred(sentense))
+
+        res = requests.put(upload_url, data=json.dumps(results).encode("utf-8"), headers=header)
         
         return Response(response=res.content.decode("utf-8"), status=res.status_code)
 
