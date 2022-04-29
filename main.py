@@ -38,7 +38,7 @@ def index(request: Request):
             return Response(response=context, status=res.status_code)
 
         sentences = context.split("\n") 
-        sentences = [sentence.strip() for sentence in sentences if sentence != '']
+        sentences = [sentence.strip() for sentence in sentences if sentence.strip() != '']
 
         results = list()
 
