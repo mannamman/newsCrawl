@@ -80,6 +80,7 @@ class HeaderCrawler:
         en_headers = translater.translate(headers, self.country, "en")
         return en_headers
 
+# test code
 if(__name__ == "__main__"):
     news_header = HeaderCrawler("en")
     news_header.get_news_header("tesla")

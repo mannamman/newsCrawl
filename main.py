@@ -78,7 +78,7 @@ def sentiment_analysis_fin(*args) -> Dict[str,any]:
     return res
 
 
-def make_chunk(headers :list, headers_len :int, cpu_count :int) -> List[List[str]]:
+def make_chunk(headers: List[str], headers_len: int, cpu_count: int) -> List[List[str]]:
     return list(
         map(
             lambda x: headers[x*cpu_count:x*cpu_count+cpu_count],
@@ -88,9 +88,9 @@ def make_chunk(headers :list, headers_len :int, cpu_count :int) -> List[List[str
 
 
 def save_result(
-        subject :str, source_lang :str, origin_headers :list,
-        translated_headers :list, kst :datetime.datetime,
-        sentiment_results :list
+        subject: str, source_lang: str, origin_headers: List[str],
+        translated_headers: List[str], kst: datetime.datetime,
+        sentiment_results: List[str]
     ):
     global file_worker
     global db_worker

@@ -10,13 +10,13 @@ class Logger:
 
 
     # 디버그 로그 작성
-    def debug_log(self, msg :str) -> None:
+    def debug_log(self, msg: str) -> None:
         self.logger.log_text(msg, severity="DEBUG")
 
 
-    def error_log(self, msg :str) -> None:
+    def error_log(self, msg: str) -> None:
         self.logger.log_text(f"ERROR LOG : {msg}", severity="ERROR")
 
 
-    def info_log(self, msg :str) -> None:
+    def info_log(self, msg: str) -> None:
         self.logger.log_text(f"INFO : {msg}", severity="INFO")

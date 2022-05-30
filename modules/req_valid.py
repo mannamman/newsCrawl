@@ -1,10 +1,10 @@
 import functools
-from flask import Response
+from flask import Response, Request
 import os
 
 def health_cors(func):
     @functools.wraps(func)
-    def wrapper(req):
+    def wrapper(req: Request):
         if(req.method == "GET"):
             return Response(status=200, response="pong")
         elif(req.method == 'OPTIONS'):
@@ -24,7 +24,7 @@ def auth_deco(func):
         'Access-Control-Allow-Origin': '*'
     }
     @functools.wraps(func)
-    def valid(req):
+    def valid(req: Request):
         if("Authorization" not in req.headers):
             return Response(status=401, response="Authorization is not exist", headers=headers)
         # 헤더 분리

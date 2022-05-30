@@ -41,6 +41,6 @@ class FileWorker:
         result_json_blob.content_type = "text/plain"
         result_json_blob.upload_from_string(json.dumps(result_dic))
 
-    
+# test code
 if(__name__ == "__main__"):
     worker = FileWorker()
