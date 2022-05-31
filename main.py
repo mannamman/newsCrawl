@@ -125,11 +125,10 @@ def index(req: Request):
         subject = recevied_msg["subject"]
         source_lang = recevied_msg["source_lang"]
 
-        utc_now = datetime.datetime.utcnow()
-        kst = pytz.utc.localize(utc_now).astimezone(KST)
+        kst_start = pytz.utc.localize(datetime.datetime.utcnow()).astimezone(KST)
 
         cur_job_uuid = uuid4()
-        logger.debug_log(f"<{str(cur_job_uuid)}> start {subject} at {kst}")
+        logger.debug_log(f"<{str(cur_job_uuid)}> start {subject} at {kst_start}")
 
         # news header만 수집(source가 en이 아니라면 번역)
         origin_headers, translated_headers, news_links = crawl(subject, source_lang)
@@ -154,8 +153,9 @@ def index(req: Request):
                 res = pool.map(sentiment_analysis_fin, chunk)
                 sentiment_results.extend(res)
 
-        save_result(subject, source_lang, origin_headers, translated_headers, kst, sentiment_results)
-        logger.debug_log(f"<{str(cur_job_uuid)}> done {subject} at {kst}")
+        kst_end = pytz.utc.localize(datetime.datetime.utcnow()).astimezone(KST)
+        save_result(subject, source_lang, origin_headers, translated_headers, kst_end, sentiment_results)
+        logger.debug_log(f"<{str(cur_job_uuid)}> done {subject} at {kst_end}")
         return Response(response="ok", status=200)
 
     except Exception:
