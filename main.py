@@ -103,7 +103,7 @@ def save_result(
 
 
 @app.route("/sentiment", methods=["POST"])
-@abstract_request()
+@abstract_request
 def index(req: Request):
     global KST
     global logger
