@@ -23,15 +23,10 @@ googleapis-common-protos==1.54.0
 grpcio==1.43.0
 grpcio-status==1.43.0
 gunicorn==20.1.0
-# h11==0.9.0
-# h2==3.2.0
-# hpack==3.0.0
-# hstspreload==2021.12.1
 httpcore==0.9.1
 httplib2==0.20.2
 httpx==0.13.3
 huggingface-hub==0.4.0
-# hyperframe==5.2.0
 idna==2.10
 itsdangerous==2.0.1
 Jinja2==3.0.3
@@ -42,7 +37,6 @@ nltk==3.6.5
 numpy==1.22.1
 packaging==21.3
 pandas==1.3.5
-# Pillow==9.0.0
 proto-plus==1.19.8
 protobuf==3.19.1
 pyasn1==0.4.8
@@ -58,18 +52,13 @@ pytz==2021.3
 PyYAML==6.0
 regex==2021.11.10
 requests==2.26.0
-# rfc3986==1.5.0
 rsa==4.8
 sacremoses==0.0.47
 scipy==1.7.3
-# shellescape==3.8.1
 six==1.16.0
-# sniffio==1.2.0
 soupsieve==2.3.1
 tokenizers==0.10.3
 torch==1.10.1
-# torchaudio==0.10.1
-# torchvision==0.11.2
 tqdm==4.62.3
 transformers==4.15.0
 typing_extensions==4.0.1
