@@ -1,4 +1,4 @@
-# news-crawl test용 
+# news-crawl 배포용 
 steps:
   - name: gcr.io/cloud-builders/docker
     args:
@@ -44,9 +44,9 @@ substitutions:
   _DEPLOY_REGION: asia-northeast3
   _GCR_HOSTNAME: asia.gcr.io
   _PLATFORM: managed
-  _SERVICE_NAME: news-crawl-test
+  _SERVICE_NAME: news-crawl
 tags:
   - gcp-cloud-build-deploy-cloud-run
   - gcp-cloud-build-deploy-cloud-run-managed
-  - news-crawl-test
+  - news-crawl
 # https://cloud.google.com/build/docs/configuring-builds/substitute-variable-values

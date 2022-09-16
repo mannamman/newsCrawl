@@ -14,16 +14,6 @@ class DBworker:
         # db 설정
         self.db = self.client["stock"]
         self.collection = self.db["en"]
-        # stock list
-        self.stock_list_collection = self.db["stockList"]
-
-    def get_stock_list(self) -> List[str]:
-        cursor = self.stock_list_collection.find()
-        stock_list = []
-        for doc in cursor:
-            stock_name = doc["stock_name"]
-            stock_list.append(stock_name)
-        return stock_list
 
     def save_result(
             self,

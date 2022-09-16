@@ -145,7 +145,7 @@ def index(req: Request):
                 sentiment_results.extend(res)
 
         kst_end = pytz.utc.localize(datetime.datetime.utcnow()).astimezone(KST)
-        # save_result(subject, source_lang, origin_headers, translated_headers, kst_end, sentiment_results)
+        save_result(subject, source_lang, origin_headers, translated_headers, kst_end, sentiment_results)
         logger.debug_log(f"<{str(cur_job_uuid)}> done {subject} at {kst_end}")
 
         return Response(response="ok", status=200)
