@@ -1,12 +1,10 @@
 from modules.newsCrawler import HeaderCrawler
 from modules.mongo_db import DBworker
 from modules.file_worker import FileWorker
-from modules.req_valid import auth_deco
 from modules.log_module import Logger
 from finBERT.sentiment import FinBert
 import pytz
 import datetime
-import json
 import functools
 from math import ceil
 import os
@@ -14,7 +12,7 @@ import traceback
 import copy
 from typing import Tuple, List, Dict
 from uuid import uuid4
-from flask import Request, Response
+from flask import Response
 # multi process
 from multiprocessing import Pool
 
@@ -103,59 +101,55 @@ def save_result(
     db_worker.save_result(sentiment_results, subject, kst)
 
 
-@app.route("/sentiment", methods=["GET", "POST"])
-@abstract_request
-@auth_deco
-def index(req: Request):
+@app.route("/sentiment", methods=["GET"])
+def index():
     global KST
     global logger
     global sentiment_finbert
-
-    # 헬스 체크
-    if(req.method == "GET"):
-        return("pong", 200)
+    global db_worker
 
     # lazy loading
     if(sentiment_finbert is None):
         init_sentiment()
 
     try:
-        # post 메시지 파싱
-        recevied_msg = json.loads(req.get_data().decode("utf-8"))
-        subject = recevied_msg["subject"]
-        source_lang = recevied_msg["source_lang"]
+        stock_list = db_worker.get_stock_list()
+        # 일단 영어로 고정
+        source_lang = "en"
 
-        kst_start = pytz.utc.localize(datetime.datetime.utcnow()).astimezone(KST)
+        for subject in stock_list:
+            kst_start = pytz.utc.localize(datetime.datetime.utcnow()).astimezone(KST)
 
-        cur_job_uuid = uuid4()
-        logger.debug_log(f"<{str(cur_job_uuid)}> start {subject} at {kst_start}")
+            cur_job_uuid = uuid4()
+            logger.debug_log(f"<{str(cur_job_uuid)}> start {subject} at {kst_start}")
 
-        # news header만 수집(source가 en이 아니라면 번역)
-        origin_headers, translated_headers, news_links = crawl(subject, source_lang)
+            # news header만 수집(source_lang en이 아니라면 번역)
+            origin_headers, translated_headers, news_links = crawl(subject, source_lang)
 
-        headers_len = len(origin_headers)
-        sentiment_results = list()
-        cpu_count = os.cpu_count()
+            headers_len = len(origin_headers)
+            sentiment_results = list()
+            cpu_count = os.cpu_count()
 
-        # source가 en이라면
-        if(translated_headers is None):
-            translated_headers = origin_headers
+            # source_lang en이라면
+            if(translated_headers is None):
+                translated_headers = origin_headers
 
-        translated_headers_copy = copy.copy(translated_headers)
-        translated_headers_copy = [(idx+1, header, news_link) for idx, (header, news_link) in enumerate(zip(translated_headers_copy, news_links))]
+            translated_headers_copy = copy.copy(translated_headers)
+            translated_headers_copy = [(idx+1, header, news_link) for idx, (header, news_link) in enumerate(zip(translated_headers_copy, news_links))]
 
-        # cpu만큼의 프로세스를 동작시키기 위해
-        chunks = make_chunk(translated_headers_copy, headers_len, cpu_count)
+            # cpu만큼의 프로세스를 동작시키기 위해
+            chunks = make_chunk(translated_headers_copy, headers_len, cpu_count)
 
-        for chunk_idx, chunk in enumerate(chunks):
-            pool_len = len(chunk)
-            with Pool(pool_len) as pool:
-                res = pool.map(sentiment_analysis_fin, chunk)
-                sentiment_results.extend(res)
+            for chunk_idx, chunk in enumerate(chunks):
+                pool_len = len(chunk)
+                with Pool(pool_len) as pool:
+                    res = pool.map(sentiment_analysis_fin, chunk)
+                    sentiment_results.extend(res)
 
-        kst_end = pytz.utc.localize(datetime.datetime.utcnow()).astimezone(KST)
-        save_result(subject, source_lang, origin_headers, translated_headers, kst_end, sentiment_results)
-        logger.debug_log(f"<{str(cur_job_uuid)}> done {subject} at {kst_end}")
+            kst_end = pytz.utc.localize(datetime.datetime.utcnow()).astimezone(KST)
+            # save_result(subject, source_lang, origin_headers, translated_headers, kst_end, sentiment_results)
+            logger.debug_log(f"<{str(cur_job_uuid)}> done {subject} at {kst_end}")
+
         return Response(response="ok", status=200)
 
     except Exception:

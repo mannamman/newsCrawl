@@ -3,18 +3,6 @@ import os
 import datetime
 from uuid import uuid4
 from typing import Dict, List
-# ObjectId로 쿼리할때 필요
-from bson.objectid import ObjectId
-
-"""
-RDBMS	    Mongo DB
-Database	Database
-Table	    Collection
-Row	        Document
-Index	    Index
-DB server	Mongod
-DB client	mongo
-"""
 
 class DBworker:
     def __init__(self):
@@ -25,8 +13,17 @@ class DBworker:
         self.client = pymongo.MongoClient(f"mongodb://{user}:{passwd}@{ip}:{port}/")
         # db 설정
         self.db = self.client["stock"]
-        # table 고정(collection)
         self.collection = self.db["en"]
+        # stock list
+        self.stock_list_collection = self.db["stockList"]
+
+    def get_stock_list(self) -> List[str]:
+        cursor = self.stock_list_collection.find()
+        stock_list = []
+        for doc in cursor:
+            stock_name = doc["stock_name"]
+            stock_list.append(stock_name)
+        return stock_list
 
     def save_result(
             self,
