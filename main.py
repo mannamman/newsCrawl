@@ -12,7 +12,8 @@ import traceback
 import copy
 from typing import Tuple, List, Dict
 from uuid import uuid4
-from flask import Response
+from flask import Response, Request
+import json
 # multi process
 from multiprocessing import Pool
 
@@ -101,8 +102,9 @@ def save_result(
     db_worker.save_result(sentiment_results, subject, kst)
 
 
-@app.route("/sentiment", methods=["GET"])
-def index():
+@app.route("/sentiment", methods=["POST"])
+@abstract_request()
+def index(req: Request):
     global KST
     global logger
     global sentiment_finbert
@@ -113,42 +115,38 @@ def index():
         init_sentiment()
 
     try:
-        stock_list = db_worker.get_stock_list()
-        # 일단 영어로 고정
-        source_lang = "en"
+        # post 메시지 파싱
+        recevied_msg = json.loads(req.get_data().decode("utf-8"))
+        subject = recevied_msg["subject"]
+        source_lang = recevied_msg["source_lang"]
 
-        for subject in stock_list:
-            kst_start = pytz.utc.localize(datetime.datetime.utcnow()).astimezone(KST)
+        kst_start = pytz.utc.localize(datetime.datetime.utcnow()).astimezone(KST)
+        cur_job_uuid = uuid4()
+        logger.debug_log(f"<{str(cur_job_uuid)}> start {subject} at {kst_start}")
 
-            cur_job_uuid = uuid4()
-            logger.debug_log(f"<{str(cur_job_uuid)}> start {subject} at {kst_start}")
+        # news header만 수집(source_lang en이 아니라면 번역)
+        origin_headers, translated_headers, news_links = crawl(subject, source_lang)
+        headers_len = len(origin_headers)
+        sentiment_results = list()
+        cpu_count = os.cpu_count()
 
-            # news header만 수집(source_lang en이 아니라면 번역)
-            origin_headers, translated_headers, news_links = crawl(subject, source_lang)
+        # source_lang en이라면
+        if(translated_headers is None):
+            translated_headers = origin_headers
+        translated_headers_copy = copy.copy(translated_headers)
+        translated_headers_copy = [(idx+1, header, news_link) for idx, (header, news_link) in enumerate(zip(translated_headers_copy, news_links))]
 
-            headers_len = len(origin_headers)
-            sentiment_results = list()
-            cpu_count = os.cpu_count()
+        # cpu만큼의 프로세스를 동작시키기 위해
+        chunks = make_chunk(translated_headers_copy, headers_len, cpu_count)
+        for chunk_idx, chunk in enumerate(chunks):
+            pool_len = len(chunk)
+            with Pool(pool_len) as pool:
+                res = pool.map(sentiment_analysis_fin, chunk)
+                sentiment_results.extend(res)
 
-            # source_lang en이라면
-            if(translated_headers is None):
-                translated_headers = origin_headers
-
-            translated_headers_copy = copy.copy(translated_headers)
-            translated_headers_copy = [(idx+1, header, news_link) for idx, (header, news_link) in enumerate(zip(translated_headers_copy, news_links))]
-
-            # cpu만큼의 프로세스를 동작시키기 위해
-            chunks = make_chunk(translated_headers_copy, headers_len, cpu_count)
-
-            for chunk_idx, chunk in enumerate(chunks):
-                pool_len = len(chunk)
-                with Pool(pool_len) as pool:
-                    res = pool.map(sentiment_analysis_fin, chunk)
-                    sentiment_results.extend(res)
-
-            kst_end = pytz.utc.localize(datetime.datetime.utcnow()).astimezone(KST)
-            # save_result(subject, source_lang, origin_headers, translated_headers, kst_end, sentiment_results)
-            logger.debug_log(f"<{str(cur_job_uuid)}> done {subject} at {kst_end}")
+        kst_end = pytz.utc.localize(datetime.datetime.utcnow()).astimezone(KST)
+        # save_result(subject, source_lang, origin_headers, translated_headers, kst_end, sentiment_results)
+        logger.debug_log(f"<{str(cur_job_uuid)}> done {subject} at {kst_end}")
 
         return Response(response="ok", status=200)
 
