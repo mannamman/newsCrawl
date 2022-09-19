@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import requests
 from bs4 import BeautifulSoup
-from modules.translater import Translater
+from modules.translator import Translator
 import os
 import re
 import copy
@@ -26,7 +26,7 @@ h3 = ipQwMb ekueJc RD0gLb
 
 # https://dojang.io/mod/page/view.php?id=2469 async 참고 자료
 
-translater = Translater()
+translator = Translator()
 
 
 class HeaderCrawler:
@@ -76,8 +76,8 @@ class HeaderCrawler:
 
 
     def _to_eng(self, headers: List[str]) -> List[str]:
-        global translater
-        en_headers = translater.translate(headers, self.country, "en")
+        global translator
+        en_headers = translator.translate(headers, self.country, "en")
         return en_headers
 
 # test code

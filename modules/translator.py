@@ -16,7 +16,7 @@ from google.cloud import translate_v3 as translate
 location = "global"
 project_id = os.getenv("project_id")
 
-class Translater:
+class Translator:
     def __init__(self) -> None:
         """
         Translater 클래스는 크롤링한 데이터를 받아 번역을 해주는 클래스
@@ -92,4 +92,4 @@ class Translater:
 
         
 if(__name__ == "__main__"):
-    t = Translater()
+    t = Translator()
