@@ -2,8 +2,6 @@
 import requests
 from bs4 import BeautifulSoup
 from modules.translator import Translator
-import os
-import re
 import copy
 from typing import List, Tuple
 """

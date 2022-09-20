@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
-from typing import List, Dict, Tuple
+from typing import List
 # from google.cloud import translate
 from google.cloud import translate_v3 as translate
 
