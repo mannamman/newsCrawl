@@ -8,7 +8,7 @@ from typing import List, Dict
 class FileWorker:
     def __init__(self) -> None:
         self.bucket_name = "crawl-bucket"
-        self.cred = self._load_client()
+        self._load_client()
         self.tempdir = tempfile.gettempdir()
 
     # 인증정보 로딩
